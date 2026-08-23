@@ -10,6 +10,6 @@ package gestion_inmobilaria;
  *
  * @author luisi
  */
-public class newClass3 {
+public class nagente_inmoviliario {
 
 }
