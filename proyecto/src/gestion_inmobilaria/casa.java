@@ -10,6 +10,13 @@ package gestion_inmobilaria;
  *
  * @author luisi
  */
-public class newClass1 {
+public class casa {
+    private int numeroCasa;
+    
 
+
+
+    public void setVendido(boolean vendido){
+
+    }
 }

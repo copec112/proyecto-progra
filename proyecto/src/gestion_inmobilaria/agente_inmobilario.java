@@ -10,6 +10,18 @@ package gestion_inmobilaria;
  *
  * @author luisi
  */
-public class nagente_inmoviliario {
+public class agente_inmoviliario {
+    private String id;
+    private int propiedadesVendidas;
+    
+    public agente_inmobilario(){
+    
+    }
+    
 
+    public void  venderPropiedad(){
+
+    }
+    public void  asignarDepartamento(){
+    }
 }

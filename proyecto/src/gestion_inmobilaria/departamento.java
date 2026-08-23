@@ -10,6 +10,10 @@ package gestion_inmobilaria;
  *
  * @author luisi
  */
-public class clase 3 {
+public class departamento {
+    private int numeroDepartamento;
+    private boolean estatus;
 
+    public void setVendido(boolean vendido){
+    }
 }

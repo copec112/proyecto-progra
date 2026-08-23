@@ -16,7 +16,15 @@ public class main {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        // TODO code application logic here
+        private string ubicacion;
+        private int demanda;
+        private int numInteresados;
     }
+    
+    public void gestionDemanda(){
 
+    }
+    public int gestionDemanda(int demanda, int numeroInteresados){
+
+    }
 }
