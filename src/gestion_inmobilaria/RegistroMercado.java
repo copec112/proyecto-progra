@@ -29,16 +29,29 @@ public class RegistroMercado {
     private int ofertaTotal;
     private int demandaTotal;
 
+    // Constructores
     public RegistroMercado() {
         this.fecha = LocalDateTime.now();
         this.ofertaTotal = 0;
         this.demandaTotal = 0;
     }
 
-    public RegistroMercado(LocalDateTime fecha, int ofertaTotal, int demandaTotal) {
+    public RegistroMercado(int ofertaTotal, int demandaTotal) {
         this.fecha = LocalDateTime.now();
         this.ofertaTotal = ofertaTotal;
         this.demandaTotal = demandaTotal;
+    }
+
+    public LocalDateTime getFecha() {
+        return fecha;
+    }
+
+    public int getOfertaTotal() {
+        return ofertaTotal;
+    }
+
+    public int getDemandaTotal() {
+        return demandaTotal;
     }
 
 }
