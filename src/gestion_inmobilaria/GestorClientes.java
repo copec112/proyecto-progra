@@ -15,6 +15,15 @@ import java.util.Scanner;
  * @author jacor
  */
 
+/**
+ * GestorClientes (implements GestorColeccion)
+ * Propósito   : gestionar la coleccion clientes de la AgenteInmobiliario.
+ * Funcionalidades: Sobre la coleccion de clientes puede: Agregar, MostrarTodos,
+ *                  editar, eliminar, buscar (id), buscarPornombre
+ * Atributos  : id (String), nombre (String), gestorClientes (GestorClientes)
+ * Métodos propios: buscarPorNombre
+*/
+
 public class GestorClientes implements GestorColeccion<Cliente, String> {
     
     private Map<String, Cliente> mapaClientes;

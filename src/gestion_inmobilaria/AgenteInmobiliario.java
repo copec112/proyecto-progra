@@ -13,7 +13,8 @@ package gestion_inmobilaria;
 
 /**
  * AgenteInmobiliario
- * 
+ * Propósito   : Venta y asignacion de propiedades; acceso al gestor de clientes.
+ * Atributos  : id (String), nombre (String), gestorClientes (GestorClientes)
 */
 
 public class AgenteInmobiliario {
@@ -29,7 +30,7 @@ public class AgenteInmobiliario {
     }
 
 
-    // Acceso al gestor de clientes
+    // Acceso al gestor de clientes (implements: GestorColeccion)
     public GestorClientes getGestorClientes() {
         return gestorClientes;
     }
