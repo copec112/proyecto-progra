@@ -6,11 +6,14 @@
 
 package gestion_inmobilaria;
 
+import java.util.Scanner;
 import javax.swing.SwingUtilities;
 
 /**
- * Punto de entrada del sistema. Carga los datos guardados en CSV,
- * y abre la ventana principal (Swing) para gestionar todo desde ahí.
+ * Punto de entrada del sistema. Carga los datos guardados en CSV, y le
+ * pregunta al usuario si quiere usar el sistema por consola o por ventana
+ * (Swing) antes de arrancar -- ambos caminos ofrecen exactamente las mismas
+ * funcionalidades, solo cambia la forma de interactuar.
  *
  * @author jacor
  */
@@ -35,16 +38,36 @@ public class App {
     public static void main(String[] args) {
         System.out.println("=== Iniciando Gestión Inmobiliaria ===");
         App app = new App();
-        app.iniciarApp();
+        app.cargarDatosGenerales();
+
+        Scanner sc = new Scanner(System.in);
+        System.out.println("\n¿Cómo deseas usar el sistema?");
+        System.out.println("1. Ventana (interfaz gráfica)");
+        System.out.println("2. Consola");
+        System.out.print("Elige una opción: ");
+        String opcion = sc.nextLine().trim();
+
+        if (opcion.equals("2")) {
+            app.iniciarConsola(sc);
+        } else {
+            app.iniciarVentana();
+            // OJO: no se cierra el Scanner acá porque System.in se comparte;
+            // si se usó la ventana, este Scanner simplemente ya no se necesita más.
+        }
     }
 
-    // Carga los datos y abre la ventana principal
-    public void iniciarApp() {
-        cargarDatosGenerales();
+    // Abre la ventana principal (Swing)
+    public void iniciarVentana() {
         SwingUtilities.invokeLater(() -> {
             MainWindow ventana = new MainWindow(gestorClientes, gestorAgentes, gestorPropiedades, gestorProyectos, gestorVentas);
             ventana.setVisible(true);
         });
+    }
+
+    // Abre el menú de consola (mismo Scanner que se usó para la pregunta inicial)
+    public void iniciarConsola(Scanner sc) {
+        MenuConsola menu = new MenuConsola(gestorClientes, gestorAgentes, gestorPropiedades, gestorProyectos, gestorVentas, sc);
+        menu.iniciar();
     }
 
     // <<Lectura y escritura de datos>>
