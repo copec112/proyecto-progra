@@ -2,7 +2,7 @@
 
 ## Descripción
 
-Este sistema de información permite al usuario gestionar las ventas de una inmobiliaria. El usuario puede gestionar los siguientes recursos de la inmobiliaria:  los agentes (y sus clientes), proyectos inmobiliarios y propiedades. Cuando se venda una propiedad, registra el agente encargado y el cliente. Además, el sistema es capaz de registrar la oferta y demanda de un proyecto a través del tiempo y formular una proyección a futuro para decidir el mejor momento para vender.
+Este sistema de información permite al usuario gestionar las ventas de una inmobiliaria a través de los siguientes recursos: agentes, clientes, proyectos inmobiliarios y propiedades. Cuando se venda una propiedad, se registra el agente encargado y su cliente. Además, el sistema es capaz de registrar la oferta y demanda de un proyecto a través del tiempo y formular una proyección a futuro para decidir el mejor momento para vender.
 
 ## Cómo compilar y ejecutar
 
