@@ -9,6 +9,7 @@ package gestion_inmobilaria;
 /**
  *
  * @author jacor
+ * tengo un problema con subir el comit xd
  */
 public class AgenteInmobiliario {
 
