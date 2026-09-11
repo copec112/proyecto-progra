@@ -17,7 +17,7 @@ import javax.swing.table.DefaultTableModel;
  * Pestaña de solo lectura con el historial de ventas: qué propiedad,
  * a qué cliente, y qué agente la vendió.
  *
- * @author jacor
+ * @author luisi
  */
 public class PanelVentas extends JPanel {
 

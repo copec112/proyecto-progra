@@ -1,6 +1,6 @@
 id,tipo,descripcion,numHabitaciones,numBanos,valorUF,numInteresados,vendido,estacionamiento,numero,clienteId
-1,CASA,Casa amplia con jardín en Las Condes,4,3,5200,4,true,true,101,1
-2,DEPARTAMENTO,Departamento luminoso cerca del metro,2,1,3100,6,true,true,304,1
+1,CASA,Casa amplia con jardín en Las Condes,4,3,5200,4,false,true,101,
+2,DEPARTAMENTO,Departamento luminoso cerca del metro,2,1,3100,6,false,true,304,
 3,CASA,Casa familiar en La Reina con quincho,5,4,7800,1,false,true,205,
 4,DEPARTAMENTO,Studio moderno en Providencia,1,1,2200,4,false,false,802,
 5,CASA,Casa esquina con patio grande,3,2,4500,4,true,true,150,3

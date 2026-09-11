@@ -26,11 +26,13 @@ import javax.swing.table.DefaultTableModel;
 public class PanelAgentes extends JPanel {
 
     private final GestorAgentes gestorAgentes;
+    private final GestorVentas gestorVentas;
     private final JTable tabla;
     private final DefaultTableModel modelo;
 
-    public PanelAgentes(GestorAgentes gestorAgentes) {
+    public PanelAgentes(GestorAgentes gestorAgentes, GestorVentas gestorVentas) {
         this.gestorAgentes = gestorAgentes;
+        this.gestorVentas = gestorVentas;
 
         setLayout(new BorderLayout(10, 10));
 
@@ -73,6 +75,7 @@ public class PanelAgentes extends JPanel {
         JTextField txtId = new JTextField();
         FiltrosTexto.soloEnteros(txtId);
         JTextField txtNombre = new JTextField();
+        FiltrosTexto.soloLetras(txtNombre);
         JPanel panel = new JPanel(new GridLayout(2, 2, 5, 5));
         panel.add(new JLabel("ID (solo números):"));
         panel.add(txtId);
@@ -108,6 +111,7 @@ public class PanelAgentes extends JPanel {
         try {
             AgenteInmobiliario a = gestorAgentes.buscarAgentes(id);
             JTextField txtNombre = new JTextField(a.getNombre());
+            FiltrosTexto.soloLetras(txtNombre);
             JPanel panel = new JPanel(new GridLayout(1, 2, 5, 5));
             panel.add(new JLabel("Nombre:"));
             panel.add(txtNombre);
@@ -133,10 +137,23 @@ public class PanelAgentes extends JPanel {
             return;
         }
         String id = (String) modelo.getValueAt(fila, 0);
-        int confirmar = JOptionPane.showConfirmDialog(this, "¿Eliminar agente " + id + "?", "Confirmar", JOptionPane.YES_NO_OPTION);
-        if (confirmar != JOptionPane.YES_OPTION) return;
-
         try {
+            AgenteInmobiliario a = gestorAgentes.buscarAgentes(id);
+
+            long ventasDelAgente = gestorVentas.getVentas().stream()
+                    .filter(v -> v.getAgenteEncargado() == a)
+                    .count();
+            if (ventasDelAgente > 0) {
+                JOptionPane.showMessageDialog(this,
+                        "No se puede eliminar: este agente tiene " + ventasDelAgente
+                        + " venta(s) registrada(s) a su nombre en el historial.",
+                        "No se puede eliminar", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            int confirmar = JOptionPane.showConfirmDialog(this, "¿Eliminar agente " + id + "?", "Confirmar", JOptionPane.YES_NO_OPTION);
+            if (confirmar != JOptionPane.YES_OPTION) return;
+
             gestorAgentes.eliminarAgentes(id);
             CsvManager.guardarAgentes(gestorAgentes);
             refrescarTabla();

@@ -19,7 +19,7 @@ import javax.swing.text.DocumentFilter;
  *
  * Uso: FiltrosTexto.soloEnteros(miJTextField);
  *
- * @author jacor
+ * @author luisi
  */
 public class FiltrosTexto {
 
@@ -35,6 +35,28 @@ public class FiltrosTexto {
             @Override
             public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
                 if (text != null && text.matches("[0-9]*")) {
+                    super.replace(fb, offset, length, text, attrs);
+                }
+            }
+        });
+    }
+
+    // Para campos de NOMBRE (Cliente, Agente, Proyecto, Ubicación): solo letras,
+    // tildes, ñ y espacios. Bloquea números y símbolos igual que soloEnteros
+    // bloquea letras, pero al revés.
+    public static void soloLetras(JTextField campo) {
+        final String PATRON = "[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ ]*";
+        ((AbstractDocument) campo.getDocument()).setDocumentFilter(new DocumentFilter() {
+            @Override
+            public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr) throws BadLocationException {
+                if (string != null && string.matches(PATRON)) {
+                    super.insertString(fb, offset, string, attr);
+                }
+            }
+
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
+                if (text != null && text.matches(PATRON)) {
                     super.replace(fb, offset, length, text, attrs);
                 }
             }

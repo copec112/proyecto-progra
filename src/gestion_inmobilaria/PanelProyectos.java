@@ -56,12 +56,14 @@ public class PanelProyectos extends JPanel {
         JButton btnEliminar = new JButton("Eliminar");
         JButton btnAsignar = new JButton("Asignar Propiedad Existente");
         JButton btnCrearAsignar = new JButton("Crear y Asignar Propiedad");
+        JButton btnQuitar = new JButton("Quitar Propiedad del Proyecto");
         JButton btnRefrescar = new JButton("Refrescar");
         panelBotones.add(btnAgregar);
         panelBotones.add(btnEditar);
         panelBotones.add(btnEliminar);
         panelBotones.add(btnAsignar);
         panelBotones.add(btnCrearAsignar);
+        panelBotones.add(btnQuitar);
         panelBotones.add(btnRefrescar);
         add(panelBotones, BorderLayout.SOUTH);
 
@@ -70,6 +72,7 @@ public class PanelProyectos extends JPanel {
         btnEliminar.addActionListener(e -> eliminarProyecto());
         btnAsignar.addActionListener(e -> asignarPropiedad());
         btnCrearAsignar.addActionListener(e -> crearYAsignarPropiedad());
+        btnQuitar.addActionListener(e -> quitarPropiedad());
         btnRefrescar.addActionListener(e -> refrescarTabla());
 
         refrescarTabla();
@@ -89,7 +92,9 @@ public class PanelProyectos extends JPanel {
         JTextField txtId = new JTextField();
         FiltrosTexto.soloEnteros(txtId);
         JTextField txtNombre = new JTextField();
+        FiltrosTexto.soloLetras(txtNombre);
         JTextField txtUbicacion = new JTextField();
+        FiltrosTexto.soloLetras(txtUbicacion);
         JPanel panel = new JPanel(new GridLayout(3, 2, 5, 5));
         panel.add(new JLabel("ID Proyecto (solo números):")); panel.add(txtId);
         panel.add(new JLabel("Nombre:")); panel.add(txtNombre);
@@ -126,7 +131,9 @@ public class PanelProyectos extends JPanel {
             ProyectoInmobiliario pr = gestorProyectos.buscarProyecto(id);
 
             JTextField txtNombre = new JTextField(pr.getNombre());
+            FiltrosTexto.soloLetras(txtNombre);
             JTextField txtUbicacion = new JTextField(pr.getUbicacion());
+            FiltrosTexto.soloLetras(txtUbicacion);
             JPanel panel = new JPanel(new GridLayout(2, 2, 5, 5));
             panel.add(new JLabel("Nombre:")); panel.add(txtNombre);
             panel.add(new JLabel("Ubicación:")); panel.add(txtUbicacion);
@@ -183,10 +190,29 @@ public class PanelProyectos extends JPanel {
         try {
             ProyectoInmobiliario pr = gestorProyectos.buscarProyecto(idProyecto);
             Propiedad prop = gestorPropiedades.buscarPropiedad(idProp);
+
+            ProyectoInmobiliario proyectoActual = gestorProyectos.buscarProyectoDePropiedad(prop);
+            if (proyectoActual != null && proyectoActual != pr) {
+                JOptionPane.showMessageDialog(this,
+                        "Esta propiedad ya está asignada al proyecto \"" + proyectoActual.getNombre() + "\".\n"
+                        + "Una propiedad física solo puede pertenecer a un proyecto a la vez.",
+                        "No se puede asignar", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            if (proyectoActual == pr) {
+                JOptionPane.showMessageDialog(this, "Esta propiedad ya está asignada a este mismo proyecto.");
+                return;
+            }
+
             pr.getPropiedades().put(idProp, prop);
             CsvManager.guardarProyectos(gestorProyectos);
             refrescarTabla();
-            JOptionPane.showMessageDialog(this, "Propiedad " + idProp + " asignada al proyecto " + idProyecto + ".");
+            if (prop.isVendido()) {
+                JOptionPane.showMessageDialog(this, "Propiedad " + idProp + " asignada al proyecto " + idProyecto
+                        + ".\nNota: esta propiedad ya está vendida, por lo tanto NO suma a la oferta disponible del proyecto.");
+            } else {
+                JOptionPane.showMessageDialog(this, "Propiedad " + idProp + " asignada al proyecto " + idProyecto + ".");
+            }
         } catch (ElementoNoEncontradoException ex) {
             JOptionPane.showMessageDialog(this, "Proyecto o propiedad no encontrada.", "Error", JOptionPane.ERROR_MESSAGE);
         }
@@ -258,6 +284,38 @@ public class PanelProyectos extends JPanel {
             refrescarTabla();
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this, "ID, habitaciones, baños, valor y número deben ser números enteros.", "Error", JOptionPane.ERROR_MESSAGE);
+        } catch (ElementoNoEncontradoException ex) {
+            JOptionPane.showMessageDialog(this, "Proyecto no encontrado.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    // Desasigna una propiedad del proyecto (NO la elimina de GestorPropiedades,
+    // solo la saca de la lista de este proyecto). Necesario para poder eliminar
+    // una propiedad más adelante, ya que una propiedad asignada a un proyecto
+    // no se puede borrar directamente (ver PanelPropiedades.eliminarPropiedad).
+    private void quitarPropiedad() {
+        int fila = tabla.getSelectedRow();
+        if (fila == -1) {
+            JOptionPane.showMessageDialog(this, "Selecciona un proyecto de la tabla.");
+            return;
+        }
+        String idProyecto = (String) modelo.getValueAt(fila, 0);
+        try {
+            ProyectoInmobiliario pr = gestorProyectos.buscarProyecto(idProyecto);
+            if (pr.getPropiedades().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Este proyecto no tiene propiedades asignadas.");
+                return;
+            }
+
+            Integer[] idsPropiedades = pr.getPropiedades().keySet().toArray(new Integer[0]);
+            Integer idProp = (Integer) JOptionPane.showInputDialog(this, "Selecciona la propiedad a quitar de este proyecto:",
+                    "Quitar Propiedad", JOptionPane.PLAIN_MESSAGE, null, idsPropiedades, idsPropiedades[0]);
+            if (idProp == null) return;
+
+            pr.getPropiedades().remove(idProp);
+            CsvManager.guardarProyectos(gestorProyectos);
+            refrescarTabla();
+            JOptionPane.showMessageDialog(this, "Propiedad " + idProp + " desasignada del proyecto " + idProyecto + ".");
         } catch (ElementoNoEncontradoException ex) {
             JOptionPane.showMessageDialog(this, "Proyecto no encontrado.", "Error", JOptionPane.ERROR_MESSAGE);
         }

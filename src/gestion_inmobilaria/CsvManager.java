@@ -160,6 +160,7 @@ public class CsvManager {
     public static void cargarPropiedades(GestorPropiedades gp, GestorClientes gc) {
         File archivo = new File(CARPETA + "/propiedades.csv");
         if (!archivo.exists()) return;
+        boolean seRepararonDatos = false;
         try (BufferedReader br = new BufferedReader(new FileReader(archivo))) {
             String linea = br.readLine();
             while ((linea = br.readLine()) != null) {
@@ -186,26 +187,43 @@ public class CsvManager {
                     prop = new Departamento(descripcion, numHabitaciones, numBanos, valorUF, estacionamiento, numero);
                 }
                 prop.setNumInteresados(numInteresados);
-                if (vendido) {
+                gp.agregarPropiedad(id, prop);
+
+                // Primero se intenta reconectar con el cliente dueño (si corresponde).
+                boolean clienteEncontrado = false;
+                if (!clienteId.isEmpty()) {
+                    try {
+                        Cliente c = gc.buscarCliente(clienteId);
+                        c.agregarPropiedad(prop);
+                        clienteEncontrado = true;
+                    } catch (ElementoNoEncontradoException e) {
+                        System.out.println("Aviso: cliente " + clienteId + " (dueño de propiedad " + id + ") no existe en clientes.csv");
+                    }
+                }
+
+                // AUTO-REPARACIÓN: si el CSV dice vendido=true pero no se pudo
+                // reconectar con un cliente real (venta "fantasma" de datos viejos,
+                // ej. de antes de que existiera el bloqueo al eliminar clientes),
+                // se libera la propiedad en vez de dejarla vendida sin dueño.
+                if (vendido && clienteEncontrado) {
                     try {
                         prop.setVendido(true);
                     } catch (PropiedadVendidaException e) {
                         // no debería pasar al cargar un dato fresco
                     }
-                }
-                gp.agregarPropiedad(id, prop);
-
-                if (!clienteId.isEmpty()) {
-                    try {
-                        Cliente c = gc.buscarCliente(clienteId);
-                        c.agregarPropiedad(prop);
-                    } catch (ElementoNoEncontradoException e) {
-                        System.out.println("Aviso: cliente " + clienteId + " (dueño de propiedad " + id + ") no existe en clientes.csv");
-                    }
+                } else if (vendido && !clienteEncontrado) {
+                    System.out.println("Reparando propiedad " + id + ": figuraba vendida pero sin un cliente válido. Se marca como DISPONIBLE.");
+                    seRepararonDatos = true;
+                    // prop.vendido ya nace en false por el constructor, no hace falta tocarlo.
                 }
             }
         } catch (IOException e) {
             System.out.println("Error al cargar propiedades.csv: " + e.getMessage());
+        }
+
+        if (seRepararonDatos) {
+            guardarPropiedades(gp, gc);
+            System.out.println("propiedades.csv actualizado con las reparaciones automáticas.");
         }
     }
 
@@ -290,6 +308,7 @@ public class CsvManager {
     public static void cargarVentas(GestorVentas gv, GestorPropiedades gp, GestorClientes gc, GestorAgentes ga) {
         File archivo = new File(CARPETA + "/ventas.csv");
         if (!archivo.exists()) return;
+        boolean seRepararonDatos = false;
         try (BufferedReader br = new BufferedReader(new FileReader(archivo))) {
             String linea = br.readLine();
             while ((linea = br.readLine()) != null) {
@@ -311,11 +330,20 @@ public class CsvManager {
                     // recrea el "recibo" de la venta con su agente asociado.
                     gv.agregarVenta(new Venta(prop, cliente, agente));
                 } catch (NumberFormatException | ElementoNoEncontradoException e) {
-                    System.out.println("Aviso: no se pudo reconstruir una venta del historial (" + linea + ")");
+                    // AUTO-REPARACIÓN: venta "fantasma" que apunta a un cliente/agente/
+                    // propiedad que ya no existe (ej. de antes del bloqueo al eliminar).
+                    // Se descarta y ventas.csv se reescribe limpio al final de la carga.
+                    System.out.println("Reparando ventas.csv: se descarta un registro inválido (" + linea + ")");
+                    seRepararonDatos = true;
                 }
             }
         } catch (IOException e) {
             System.out.println("Error al cargar ventas.csv: " + e.getMessage());
+        }
+
+        if (seRepararonDatos) {
+            guardarVentas(gv, gp);
+            System.out.println("ventas.csv actualizado con las reparaciones automáticas.");
         }
     }
 

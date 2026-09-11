@@ -8,7 +8,7 @@ package gestion_inmobilaria;
 
 /**
  *
- * @author jacor
+ * @author luis
  */
 
 /**

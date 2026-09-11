@@ -73,6 +73,7 @@ public class PanelClientes extends JPanel {
         JTextField txtId = new JTextField();
         FiltrosTexto.soloEnteros(txtId);
         JTextField txtNombre = new JTextField();
+        FiltrosTexto.soloLetras(txtNombre);
         JPanel panel = new JPanel(new GridLayout(2, 2, 5, 5));
         panel.add(new JLabel("ID (solo números):"));
         panel.add(txtId);
@@ -108,6 +109,7 @@ public class PanelClientes extends JPanel {
         try {
             Cliente c = gestorClientes.buscarCliente(id);
             JTextField txtNombre = new JTextField(c.getNombre());
+            FiltrosTexto.soloLetras(txtNombre);
             JPanel panel = new JPanel(new GridLayout(1, 2, 5, 5));
             panel.add(new JLabel("Nombre:"));
             panel.add(txtNombre);
@@ -133,10 +135,21 @@ public class PanelClientes extends JPanel {
             return;
         }
         String id = (String) modelo.getValueAt(fila, 0);
-        int confirmar = JOptionPane.showConfirmDialog(this, "¿Eliminar cliente " + id + "?", "Confirmar", JOptionPane.YES_NO_OPTION);
-        if (confirmar != JOptionPane.YES_OPTION) return;
-
         try {
+            Cliente c = gestorClientes.buscarCliente(id);
+            if (!c.getPropiedadesAdquiridas().isEmpty()) {
+                JOptionPane.showMessageDialog(this,
+                        "No se puede eliminar: este cliente tiene " + c.getPropiedadesAdquiridas().size()
+                        + " propiedad(es) adquirida(s) registrada(s).\n"
+                        + "Eliminarlo dejaría esas ventas con datos inconsistentes (la propiedad seguiría\n"
+                        + "marcada como vendida, pero sin dueño).",
+                        "No se puede eliminar", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            int confirmar = JOptionPane.showConfirmDialog(this, "¿Eliminar cliente " + id + "?", "Confirmar", JOptionPane.YES_NO_OPTION);
+            if (confirmar != JOptionPane.YES_OPTION) return;
+
             gestorClientes.eliminarCliente(id);
             CsvManager.guardarClientes(gestorClientes);
             refrescarTabla();

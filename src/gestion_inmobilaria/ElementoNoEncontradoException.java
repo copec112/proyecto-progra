@@ -10,7 +10,7 @@ package gestion_inmobilaria;
  * Se lanza cuando no se encuentra un elemento buscado en una colección
  * (agente, proyecto, cliente o propiedad).
  *
- * @author jacor
+ * @author luisi
  */
 public class ElementoNoEncontradoException extends Exception {
 

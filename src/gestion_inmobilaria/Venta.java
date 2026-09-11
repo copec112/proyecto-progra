@@ -13,7 +13,7 @@ package gestion_inmobilaria;
  * versión mínima; ajusta los atributos según lo que realmente necesites
  * registrar de cada venta.
  *
- * @author jacor
+ * @author luisi
  */
 public class Venta {
 

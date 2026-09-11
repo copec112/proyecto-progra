@@ -40,13 +40,12 @@ public class ProyectoInmobiliario {
         this.ubicacion = ubicacion;
         this.propiedades = new HashMap<>();
         this.historialMercado = new ArrayList<>();
-        System.out.println("Proyecto creado: [" + idProyecto + "] " + nombre + " (" + ubicacion + ")");
     }
 
     // <<Gestión de la coleccion>>
     // TODO: aquí normalmente se delegaría en un GestorPropiedades sobre "propiedades".
     public void gestionarPropiedades() {
-        System.out.println("Gestionando propiedades del proyecto " + nombre + "... (lógica pendiente)");
+        // lógica pendiente (agregar/editar/eliminar/mostrar propiedades del proyecto)
     }
 
     // <<Lógica del Negocio (Oferta y Demanda)>>
@@ -58,7 +57,6 @@ public class ProyectoInmobiliario {
                 oferta++;
             }
         }
-        System.out.println("Oferta disponible en " + nombre + ": " + oferta);
         return oferta;
     }
 
@@ -68,22 +66,80 @@ public class ProyectoInmobiliario {
         for (Propiedad p : propiedades.values()) {
             demanda += p.getNumInteresados();
         }
-        System.out.println("Demanda total en " + nombre + ": " + demanda);
         return demanda;
     }
 
     // <<Funcionalidad Única>>
-    // TODO: definir la lógica real de proyección.
+    // Modelo de proyección: mientras más tensionado esté el mercado (demanda
+    // alta respecto a la oferta disponible), más rápido sube el precio
+    // promedio proyectado. Se usa una tasa mensual base (supuesto de mercado
+    // estable) ajustada por la razón demanda/oferta, aplicada como interés
+    // compuesto sobre los meses futuros.
+    private static final double TASA_MENSUAL_BASE = 0.005; // 0.5% mensual en un mercado equilibrado
+
+    // Precio promedio actual de las propiedades del proyecto (vendidas o no),
+    // usado como punto de partida de la proyección.
+    public double calcularPrecioPromedioActual() {
+        if (propiedades.isEmpty()) return 0;
+        double suma = 0;
+        for (Propiedad p : propiedades.values()) {
+            suma += p.getValorUF();
+        }
+        return suma / propiedades.size();
+    }
+
+    // Razón demanda/oferta: >1 significa más interesados que propiedades
+    // disponibles (mercado tensionado, sube más rápido); <1 significa que
+    // sobra oferta respecto al interés actual (sube más lento).
+    public double calcularRatioTension() {
+        int oferta = calcularOfertaDisponible();
+        int demanda = calcularDemandaTotal();
+        if (oferta == 0) {
+            return demanda == 0 ? 1.0 : 3.0; // sin oferta disponible: tope de tensión asumido
+        }
+        return (double) demanda / oferta;
+    }
+
+    // Precio promedio proyectado a N meses, usando interés compuesto con
+    // la tasa base ajustada por el ratio de tensión del mercado.
+    public double proyectarPrecioPromedio(int mesesFuturo) {
+        double tasaAjustada = TASA_MENSUAL_BASE * calcularRatioTension();
+        double precioActual = calcularPrecioPromedioActual();
+        return precioActual * Math.pow(1 + tasaAjustada, mesesFuturo);
+    }
+
+    // Cuánto sube el precio promedio en UF (positivo = sube).
+    public double calcularAumentoEstimado(int mesesFuturo) {
+        return proyectarPrecioPromedio(mesesFuturo) - calcularPrecioPromedioActual();
+    }
+
+    // Lo mismo pero en porcentaje respecto al precio actual.
+    public double calcularAumentoPorcentual(int mesesFuturo) {
+        double actual = calcularPrecioPromedioActual();
+        if (actual == 0) return 0;
+        return (calcularAumentoEstimado(mesesFuturo) / actual) * 100;
+    }
+
     public String proyectarOfertaDemanda() {
         return proyectarOfertaDemanda(1);
     }
 
     public String proyectarOfertaDemanda(int mesesFuturo) {
-        // placeholder: reemplazar con el modelo de proyección real
-        String resultado = "Proyección a " + mesesFuturo + " mes(es) - oferta actual: "
-                + calcularOfertaDisponible() + ", demanda actual: " + calcularDemandaTotal();
-        System.out.println(resultado);
-        return resultado;
+        int oferta = calcularOfertaDisponible();
+        int demanda = calcularDemandaTotal();
+        double precioActual = calcularPrecioPromedioActual();
+        double precioProyectado = proyectarPrecioPromedio(mesesFuturo);
+        double aumentoUF = calcularAumentoEstimado(mesesFuturo);
+        double aumentoPorcentual = calcularAumentoPorcentual(mesesFuturo);
+
+        return String.format(
+                "Proyecto \"%s\" - Proyección a %d mes(es):%n"
+                + "  Oferta disponible: %d | Demanda: %d | Ratio de tensión: %.2f%n"
+                + "  Precio promedio ACTUAL: %.1f UF%n"
+                + "  Precio promedio PROYECTADO: %.1f UF%n"
+                + "  >>> SUBE %.1f UF (%.1f%%) en %d mes(es) <<<",
+                nombre, mesesFuturo, oferta, demanda, calcularRatioTension(),
+                precioActual, precioProyectado, aumentoUF, aumentoPorcentual, mesesFuturo);
     }
 
     // <<Historial oferta/demanda>>
@@ -95,7 +151,6 @@ public class ProyectoInmobiliario {
         // NOTA: RegistroMercado espera LocalDateTime; se parsea el string recibido.
         LocalDateTime fechaRegistro = LocalDateTime.parse(fecha);
         this.historialMercado.add(new RegistroMercado(fechaRegistro, oferta, demanda));
-        System.out.println("Estado de mercado registrado en " + nombre + " (" + fecha + "): oferta=" + oferta + ", demanda=" + demanda);
     }
 
     // Get/set

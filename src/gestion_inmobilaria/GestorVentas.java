@@ -17,7 +17,7 @@ import java.util.List;
  * poder consultar el historial de ventas desde la ventana (antes esa
  * información se perdía apenas se cerraba el programa).
  *
- * @author jacor
+ * @author luisi
  */
 public class GestorVentas {
 

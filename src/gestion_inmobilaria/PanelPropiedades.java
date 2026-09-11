@@ -37,15 +37,17 @@ public class PanelPropiedades extends JPanel {
     private final GestorClientes gestorClientes;
     private final GestorAgentes gestorAgentes;
     private final GestorVentas gestorVentas;
+    private final GestorProyectos gestorProyectos;
     private final JTable tabla;
     private final DefaultTableModel modelo;
 
     public PanelPropiedades(GestorPropiedades gestorPropiedades, GestorClientes gestorClientes,
-            GestorAgentes gestorAgentes, GestorVentas gestorVentas) {
+            GestorAgentes gestorAgentes, GestorVentas gestorVentas, GestorProyectos gestorProyectos) {
         this.gestorPropiedades = gestorPropiedades;
         this.gestorClientes = gestorClientes;
         this.gestorAgentes = gestorAgentes;
         this.gestorVentas = gestorVentas;
+        this.gestorProyectos = gestorProyectos;
 
         setLayout(new BorderLayout(10, 10));
 
@@ -238,10 +240,30 @@ public class PanelPropiedades extends JPanel {
             return;
         }
         int id = (int) modelo.getValueAt(fila, 0);
-        int confirmar = JOptionPane.showConfirmDialog(this, "¿Eliminar propiedad " + id + "?", "Confirmar", JOptionPane.YES_NO_OPTION);
-        if (confirmar != JOptionPane.YES_OPTION) return;
-
         try {
+            Propiedad p = gestorPropiedades.buscarPropiedad(id);
+
+            if (p.isVendido()) {
+                JOptionPane.showMessageDialog(this,
+                        "No se puede eliminar: esta propiedad ya está vendida y tiene un cliente asociado.\n"
+                        + "Eliminarla dejaría la venta con datos inconsistentes.",
+                        "No se puede eliminar", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            ProyectoInmobiliario proyectoQueLaTiene = gestorProyectos.buscarProyectoDePropiedad(p);
+            if (proyectoQueLaTiene != null) {
+                JOptionPane.showMessageDialog(this,
+                        "No se puede eliminar: esta propiedad está asignada al proyecto \""
+                        + proyectoQueLaTiene.getNombre() + "\".\n"
+                        + "Quítala de ese proyecto primero (pestaña Proyectos → Quitar Propiedad del Proyecto).",
+                        "No se puede eliminar", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            int confirmar = JOptionPane.showConfirmDialog(this, "¿Eliminar propiedad " + id + "?", "Confirmar", JOptionPane.YES_NO_OPTION);
+            if (confirmar != JOptionPane.YES_OPTION) return;
+
             gestorPropiedades.eliminarPropiedad(id);
             CsvManager.guardarPropiedades(gestorPropiedades, gestorClientes);
             refrescarTabla();

@@ -43,16 +43,18 @@ public class MainWindow extends JFrame {
 
         JTabbedPane pestañas = new JTabbedPane();
         PanelClientes panelClientes = new PanelClientes(gestorClientes);
-        PanelAgentes panelAgentes = new PanelAgentes(gestorAgentes);
-        PanelPropiedades panelPropiedades = new PanelPropiedades(gestorPropiedades, gestorClientes, gestorAgentes, gestorVentas);
+        PanelAgentes panelAgentes = new PanelAgentes(gestorAgentes, gestorVentas);
+        PanelPropiedades panelPropiedades = new PanelPropiedades(gestorPropiedades, gestorClientes, gestorAgentes, gestorVentas, gestorProyectos);
         PanelProyectos panelProyectos = new PanelProyectos(gestorProyectos, gestorPropiedades, gestorClientes);
         PanelVentas panelVentas = new PanelVentas(gestorVentas);
+        PanelProyeccion panelProyeccion = new PanelProyeccion(gestorProyectos);
 
         pestañas.addTab("Clientes", panelClientes);
         pestañas.addTab("Agentes", panelAgentes);
         pestañas.addTab("Propiedades", panelPropiedades);
         pestañas.addTab("Proyectos", panelProyectos);
         pestañas.addTab("Ventas", panelVentas);
+        pestañas.addTab("Proyección de Precios", panelProyeccion);
 
         // Al cambiar de pestaña se refrescan todas las tablas, por si otra
         // pestaña modificó datos relacionados (ej: vender una propiedad
@@ -63,6 +65,7 @@ public class MainWindow extends JFrame {
             panelPropiedades.refrescarTabla();
             panelProyectos.refrescarTabla();
             panelVentas.refrescarTabla();
+            panelProyeccion.refrescarTabla();
         });
 
         add(pestañas);

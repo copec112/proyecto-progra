@@ -11,7 +11,7 @@ import java.util.Map;
 
 /**
  *
- * @author jacor
+ * @author luisi
  */
 public class GestorClientes {
 
