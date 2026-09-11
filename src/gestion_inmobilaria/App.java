@@ -21,6 +21,7 @@ public class App {
     private GestorAgentes gestorAgentes;
     private GestorPropiedades gestorPropiedades;
     private GestorProyectos gestorProyectos;
+    private GestorVentas gestorVentas;
 
     // Constructor
     public App() {
@@ -28,6 +29,7 @@ public class App {
         this.gestorAgentes = new GestorAgentes();
         this.gestorPropiedades = new GestorPropiedades();
         this.gestorProyectos = new GestorProyectos();
+        this.gestorVentas = new GestorVentas();
     }
 
     public static void main(String[] args) {
@@ -40,18 +42,18 @@ public class App {
     public void iniciarApp() {
         cargarDatosGenerales();
         SwingUtilities.invokeLater(() -> {
-            MainWindow ventana = new MainWindow(gestorClientes, gestorAgentes, gestorPropiedades, gestorProyectos);
+            MainWindow ventana = new MainWindow(gestorClientes, gestorAgentes, gestorPropiedades, gestorProyectos, gestorVentas);
             ventana.setVisible(true);
         });
     }
 
     // <<Lectura y escritura de datos>>
     public void cargarDatosGenerales() {
-        CsvManager.cargarTodo(gestorClientes, gestorAgentes, gestorPropiedades, gestorProyectos);
+        CsvManager.cargarTodo(gestorClientes, gestorAgentes, gestorPropiedades, gestorProyectos, gestorVentas);
     }
 
     public void guardarDatosGenerales() {
-        CsvManager.guardarTodo(gestorClientes, gestorAgentes, gestorPropiedades, gestorProyectos);
+        CsvManager.guardarTodo(gestorClientes, gestorAgentes, gestorPropiedades, gestorProyectos, gestorVentas);
     }
 
     // Get/set
@@ -66,4 +68,7 @@ public class App {
 
     public GestorProyectos getGestorProyectos() {return gestorProyectos;}
     public void setGestorProyectos(GestorProyectos gestorProyectos) {this.gestorProyectos = gestorProyectos;}
+
+    public GestorVentas getGestorVentas() {return gestorVentas;}
+    public void setGestorVentas(GestorVentas gestorVentas) {this.gestorVentas = gestorVentas;}
 }

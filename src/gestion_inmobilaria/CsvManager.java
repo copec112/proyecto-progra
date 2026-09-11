@@ -30,21 +30,23 @@ public class CsvManager {
 
     // ============ CARGA / GUARDADO GENERAL ============
 
-    public static void cargarTodo(GestorClientes gc, GestorAgentes ga, GestorPropiedades gp, GestorProyectos gpr) {
+    public static void cargarTodo(GestorClientes gc, GestorAgentes ga, GestorPropiedades gp, GestorProyectos gpr, GestorVentas gv) {
         crearCarpetaSiNoExiste();
         cargarClientes(gc);
         cargarAgentes(ga);
         cargarPropiedades(gp, gc);
         cargarProyectos(gpr, gp);
+        cargarVentas(gv, gp, gc, ga); // ok, misma firma
         System.out.println("=== Carga de datos CSV completa ===");
     }
 
-    public static void guardarTodo(GestorClientes gc, GestorAgentes ga, GestorPropiedades gp, GestorProyectos gpr) {
+    public static void guardarTodo(GestorClientes gc, GestorAgentes ga, GestorPropiedades gp, GestorProyectos gpr, GestorVentas gv) {
         crearCarpetaSiNoExiste();
         guardarClientes(gc);
         guardarAgentes(ga);
         guardarPropiedades(gp, gc);
         guardarProyectos(gpr);
+        guardarVentas(gv, gp);
         System.out.println("=== Guardado de datos CSV completo ===");
     }
 
@@ -258,6 +260,62 @@ public class CsvManager {
             }
         } catch (IOException e) {
             System.out.println("Error al cargar proyectos.csv: " + e.getMessage());
+        }
+    }
+
+    // ============ VENTAS ============
+
+    // Necesita GestorPropiedades para poder resolver el id numérico de cada
+    // propiedad vendida (Venta solo guarda la referencia al objeto, no su id).
+    public static void guardarVentas(GestorVentas gv, GestorPropiedades gp) {
+        crearCarpetaSiNoExiste();
+        try (PrintWriter pw = new PrintWriter(new FileWriter(CARPETA + "/ventas.csv"))) {
+            pw.println("propiedadId,clienteId,agenteId");
+            for (Venta v : gv.getVentas()) {
+                Integer idProp = null;
+                for (Map.Entry<Integer, Propiedad> entry : gp.getPropiedades().entrySet()) {
+                    if (entry.getValue() == v.getPropiedad()) {
+                        idProp = entry.getKey();
+                        break;
+                    }
+                }
+                if (idProp == null) continue; // propiedad no encontrada, se omite
+                pw.println(idProp + "," + escapar(v.getCliente().getId()) + "," + escapar(v.getAgenteEncargado().getId()));
+            }
+        } catch (IOException e) {
+            System.out.println("Error al guardar ventas.csv: " + e.getMessage());
+        }
+    }
+
+    public static void cargarVentas(GestorVentas gv, GestorPropiedades gp, GestorClientes gc, GestorAgentes ga) {
+        File archivo = new File(CARPETA + "/ventas.csv");
+        if (!archivo.exists()) return;
+        try (BufferedReader br = new BufferedReader(new FileReader(archivo))) {
+            String linea = br.readLine();
+            while ((linea = br.readLine()) != null) {
+                if (linea.trim().isEmpty()) continue;
+                String[] p = linea.split(",", -1);
+                if (p.length < 3) continue;
+                try {
+                    int idProp = Integer.parseInt(p[0]);
+                    String idCliente = desescapar(p[1]);
+                    String idAgente = desescapar(p[2]);
+
+                    Propiedad prop = gp.buscarPropiedad(idProp);
+                    Cliente cliente = gc.buscarCliente(idCliente);
+                    AgenteInmobiliario agente = ga.buscarAgentes(idAgente);
+
+                    // Solo reconstruimos el registro (para mostrar el agente en pantalla).
+                    // El vendido=true y la relación cliente-propiedad ya se reconstruyen
+                    // al cargar propiedades.csv, así que esto no duplica nada, solo
+                    // recrea el "recibo" de la venta con su agente asociado.
+                    gv.agregarVenta(new Venta(prop, cliente, agente));
+                } catch (NumberFormatException | ElementoNoEncontradoException e) {
+                    System.out.println("Aviso: no se pudo reconstruir una venta del historial (" + linea + ")");
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Error al cargar ventas.csv: " + e.getMessage());
         }
     }
 

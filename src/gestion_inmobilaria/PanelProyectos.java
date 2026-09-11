@@ -9,6 +9,8 @@ package gestion_inmobilaria;
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -28,12 +30,14 @@ public class PanelProyectos extends JPanel {
 
     private final GestorProyectos gestorProyectos;
     private final GestorPropiedades gestorPropiedades;
+    private final GestorClientes gestorClientes;
     private final JTable tabla;
     private final DefaultTableModel modelo;
 
-    public PanelProyectos(GestorProyectos gestorProyectos, GestorPropiedades gestorPropiedades) {
+    public PanelProyectos(GestorProyectos gestorProyectos, GestorPropiedades gestorPropiedades, GestorClientes gestorClientes) {
         this.gestorProyectos = gestorProyectos;
         this.gestorPropiedades = gestorPropiedades;
+        this.gestorClientes = gestorClientes;
 
         setLayout(new BorderLayout(10, 10));
 
@@ -50,12 +54,14 @@ public class PanelProyectos extends JPanel {
         JButton btnAgregar = new JButton("Agregar");
         JButton btnEditar = new JButton("Editar");
         JButton btnEliminar = new JButton("Eliminar");
-        JButton btnAsignar = new JButton("Asignar Propiedad");
+        JButton btnAsignar = new JButton("Asignar Propiedad Existente");
+        JButton btnCrearAsignar = new JButton("Crear y Asignar Propiedad");
         JButton btnRefrescar = new JButton("Refrescar");
         panelBotones.add(btnAgregar);
         panelBotones.add(btnEditar);
         panelBotones.add(btnEliminar);
         panelBotones.add(btnAsignar);
+        panelBotones.add(btnCrearAsignar);
         panelBotones.add(btnRefrescar);
         add(panelBotones, BorderLayout.SOUTH);
 
@@ -63,6 +69,7 @@ public class PanelProyectos extends JPanel {
         btnEditar.addActionListener(e -> editarProyecto());
         btnEliminar.addActionListener(e -> eliminarProyecto());
         btnAsignar.addActionListener(e -> asignarPropiedad());
+        btnCrearAsignar.addActionListener(e -> crearYAsignarPropiedad());
         btnRefrescar.addActionListener(e -> refrescarTabla());
 
         refrescarTabla();
@@ -182,6 +189,77 @@ public class PanelProyectos extends JPanel {
             JOptionPane.showMessageDialog(this, "Propiedad " + idProp + " asignada al proyecto " + idProyecto + ".");
         } catch (ElementoNoEncontradoException ex) {
             JOptionPane.showMessageDialog(this, "Proyecto o propiedad no encontrada.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    // Crea una propiedad nueva y la asigna al proyecto seleccionado en un solo paso,
+    // para no tener que ir a la pestaña Propiedades y volver a Asignar Propiedad.
+    private void crearYAsignarPropiedad() {
+        int fila = tabla.getSelectedRow();
+        if (fila == -1) {
+            JOptionPane.showMessageDialog(this, "Selecciona un proyecto de la tabla.");
+            return;
+        }
+        String idProyecto = (String) modelo.getValueAt(fila, 0);
+
+        JTextField txtId = new JTextField();
+        FiltrosTexto.soloEnteros(txtId);
+        JComboBox<String> comboTipo = new JComboBox<>(new String[]{"CASA", "DEPARTAMENTO"});
+        JTextField txtDescripcion = new JTextField();
+        JTextField txtHabitaciones = new JTextField("0");
+        FiltrosTexto.soloEnteros(txtHabitaciones);
+        JTextField txtBanos = new JTextField("0");
+        FiltrosTexto.soloEnteros(txtBanos);
+        JTextField txtValorUF = new JTextField("0");
+        FiltrosTexto.soloEnteros(txtValorUF);
+        JCheckBox chkEstacionamiento = new JCheckBox();
+        JTextField txtNumero = new JTextField("0");
+        FiltrosTexto.soloEnteros(txtNumero);
+
+        JPanel panel = new JPanel(new GridLayout(0, 2, 5, 5));
+        panel.add(new JLabel("ID (número único):")); panel.add(txtId);
+        panel.add(new JLabel("Tipo:")); panel.add(comboTipo);
+        panel.add(new JLabel("Descripción:")); panel.add(txtDescripcion);
+        panel.add(new JLabel("N° Habitaciones:")); panel.add(txtHabitaciones);
+        panel.add(new JLabel("N° Baños:")); panel.add(txtBanos);
+        panel.add(new JLabel("Valor (UF):")); panel.add(txtValorUF);
+        panel.add(new JLabel("Estacionamiento:")); panel.add(chkEstacionamiento);
+        panel.add(new JLabel("N° Casa/Depto:")); panel.add(txtNumero);
+
+        int resultado = JOptionPane.showConfirmDialog(this, panel, "Crear y Asignar Propiedad a " + idProyecto, JOptionPane.OK_CANCEL_OPTION);
+        if (resultado != JOptionPane.OK_OPTION) return;
+
+        try {
+            int idProp = Integer.parseInt(txtId.getText().trim());
+            if (gestorPropiedades.getPropiedades().containsKey(idProp)) {
+                JOptionPane.showMessageDialog(this, "Ya existe una propiedad con ese ID.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            String descripcion = txtDescripcion.getText().trim();
+            int habitaciones = Integer.parseInt(txtHabitaciones.getText().trim());
+            int banos = Integer.parseInt(txtBanos.getText().trim());
+            int valorUF = Integer.parseInt(txtValorUF.getText().trim());
+            boolean estacionamiento = chkEstacionamiento.isSelected();
+            int numero = Integer.parseInt(txtNumero.getText().trim());
+
+            Propiedad prop;
+            if (comboTipo.getSelectedItem().equals("CASA")) {
+                prop = new Casa(descripcion, habitaciones, banos, valorUF, estacionamiento, numero);
+            } else {
+                prop = new Departamento(descripcion, habitaciones, banos, valorUF, estacionamiento, numero);
+            }
+
+            gestorPropiedades.agregarPropiedad(idProp, prop);
+            ProyectoInmobiliario pr = gestorProyectos.buscarProyecto(idProyecto);
+            pr.getPropiedades().put(idProp, prop);
+
+            CsvManager.guardarPropiedades(gestorPropiedades, gestorClientes);
+            CsvManager.guardarProyectos(gestorProyectos);
+            refrescarTabla();
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "ID, habitaciones, baños, valor y número deben ser números enteros.", "Error", JOptionPane.ERROR_MESSAGE);
+        } catch (ElementoNoEncontradoException ex) {
+            JOptionPane.showMessageDialog(this, "Proyecto no encontrado.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 }
