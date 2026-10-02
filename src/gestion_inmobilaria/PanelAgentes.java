@@ -19,7 +19,8 @@ import javax.swing.table.DefaultTableModel;
 
 /**
  * Pestaña de gestión de agentes inmobiliarios: tabla + Agregar/Editar/Eliminar.
- * Cada operación guarda automáticamente en agentes.csv.
+ * Los cambios se guardan en agentes.csv recién al cerrar la ventana
+ * (ver MainWindow.windowClosing), no después de cada operación.
  *
  * @author jacor
  */
@@ -30,6 +31,15 @@ public class PanelAgentes extends JPanel {
     private final JTable tabla;
     private final DefaultTableModel modelo;
 
+    /**
+     * Construye el panel de gestión de agentes: crea la tabla, los botones
+     * de Agregar/Editar/Eliminar/Refrescar, conecta sus acciones y carga la
+     * tabla con los agentes existentes.
+     *
+     * @param gestorAgentes gestor de agentes a mostrar y modificar.
+     * @param gestorVentas gestor de ventas, usado para verificar si un
+     *        agente tiene ventas registradas antes de eliminarlo.
+     */
     public PanelAgentes(GestorAgentes gestorAgentes, GestorVentas gestorVentas) {
         this.gestorAgentes = gestorAgentes;
         this.gestorVentas = gestorVentas;
@@ -64,6 +74,9 @@ public class PanelAgentes extends JPanel {
         refrescarTabla();
     }
 
+    /**
+     * Recarga la tabla con el id y nombre de todos los agentes del gestor.
+     */
     public void refrescarTabla() {
         modelo.setRowCount(0);
         for (AgenteInmobiliario a : gestorAgentes.getAgentes().values()) {
@@ -71,6 +84,11 @@ public class PanelAgentes extends JPanel {
         }
     }
 
+    /**
+     * Maneja el botón "Agregar": pide id y nombre en un diálogo, valida que
+     * no estén vacíos y que el id no esté repetido, y agrega el nuevo
+     * agente al gestor.
+     */
     private void agregarAgente() {
         JTextField txtId = new JTextField();
         FiltrosTexto.soloEnteros(txtId);
@@ -97,10 +115,13 @@ public class PanelAgentes extends JPanel {
         }
 
         gestorAgentes.agregarAgentes(new AgenteInmobiliario(id, nombre));
-        CsvManager.guardarAgentes(gestorAgentes);
         refrescarTabla();
     }
 
+    /**
+     * Maneja el botón "Editar": toma el agente seleccionado en la tabla y
+     * permite modificar su nombre mediante un diálogo.
+     */
     private void editarAgente() {
         int fila = tabla.getSelectedRow();
         if (fila == -1) {
@@ -121,7 +142,6 @@ public class PanelAgentes extends JPanel {
                 String nuevoNombre = txtNombre.getText().trim();
                 if (!nuevoNombre.isEmpty()) {
                     a.setNombre(nuevoNombre);
-                    CsvManager.guardarAgentes(gestorAgentes);
                     refrescarTabla();
                 }
             }
@@ -130,6 +150,12 @@ public class PanelAgentes extends JPanel {
         }
     }
 
+    /**
+     * Maneja el botón "Eliminar": toma el agente seleccionado en la tabla,
+     * verifica que no tenga ventas registradas a su nombre (en cuyo caso se
+     * bloquea la eliminación) y, tras confirmar con el usuario, lo elimina
+     * del gestor.
+     */
     private void eliminarAgente() {
         int fila = tabla.getSelectedRow();
         if (fila == -1) {
@@ -155,7 +181,6 @@ public class PanelAgentes extends JPanel {
             if (confirmar != JOptionPane.YES_OPTION) return;
 
             gestorAgentes.eliminarAgentes(id);
-            CsvManager.guardarAgentes(gestorAgentes);
             refrescarTabla();
         } catch (ElementoNoEncontradoException ex) {
             JOptionPane.showMessageDialog(this, "Agente no encontrado.", "Error", JOptionPane.ERROR_MESSAGE);

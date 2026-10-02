@@ -31,6 +31,13 @@ public class PanelProyeccion extends JPanel {
     private final DefaultTableModel modelo;
     private final JTextField txtMeses;
 
+    /**
+     * Construye el panel de proyección de precios: crea la tabla y los
+     * controles para elegir cuántos meses proyectar, conecta los botones
+     * a sus acciones y carga la tabla con los proyectos existentes.
+     *
+     * @param gestorProyectos gestor de proyectos a mostrar y proyectar.
+     */
     public PanelProyeccion(GestorProyectos gestorProyectos) {
         this.gestorProyectos = gestorProyectos;
 
@@ -64,6 +71,10 @@ public class PanelProyeccion extends JPanel {
         refrescarTabla();
     }
 
+    /**
+     * Recarga la tabla con el estado actual de oferta, demanda y precio
+     * promedio de todos los proyectos del gestor.
+     */
     public void refrescarTabla() {
         modelo.setRowCount(0);
         for (ProyectoInmobiliario pr : gestorProyectos.getProyectos().values()) {
@@ -78,6 +89,12 @@ public class PanelProyeccion extends JPanel {
         }
     }
 
+    /**
+     * Maneja el botón "Proyectar Precio": toma el proyecto seleccionado en
+     * la tabla y la cantidad de meses ingresada, calcula la proyección de
+     * precio correspondiente, registra el estado de mercado y muestra el
+     * resultado en un diálogo.
+     */
     private void proyectarPrecio() {
         int fila = tabla.getSelectedRow();
         if (fila == -1) {

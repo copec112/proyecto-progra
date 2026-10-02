@@ -15,6 +15,9 @@ import java.util.Scanner;
  * Usa los mismos Gestor* y el mismo CsvManager, así que cualquier cambio
  * hecho por consola queda igual de persistido que uno hecho por ventana.
  *
+ * El guardado en CSV ocurre una sola vez, al elegir "Guardar y Salir"
+ * (opción 7 del menú principal) -- no después de cada operación individual.
+ *
  * IDs y campos numéricos (habitaciones, baños, valor UF, número) solo
  * aceptan enteros NO negativos, igual que FiltrosTexto en la ventana
  * (que directamente bloquea el signo "-" al escribir).
@@ -30,6 +33,18 @@ public class MenuConsola {
     private final GestorProyectos gestorProyectos;
     private final GestorVentas gestorVentas;
 
+    /**
+     * Construye el menú de consola con los mismos gestores usados por la
+     * ventana Swing, de forma que ambas interfaces operan sobre los mismos
+     * datos en memoria.
+     *
+     * @param gestorClientes gestor de clientes
+     * @param gestorAgentes gestor de agentes
+     * @param gestorPropiedades gestor de propiedades
+     * @param gestorProyectos gestor de proyectos
+     * @param gestorVentas gestor de ventas
+     * @param sc Scanner usado para leer la entrada del usuario por consola
+     */
     public MenuConsola(GestorClientes gestorClientes, GestorAgentes gestorAgentes,
             GestorPropiedades gestorPropiedades, GestorProyectos gestorProyectos,
             GestorVentas gestorVentas, Scanner sc) {
@@ -43,6 +58,13 @@ public class MenuConsola {
 
     // ============ MENÚ PRINCIPAL ============
 
+    /**
+     * Inicia el bucle principal del menú de consola, mostrando las
+     * opciones de nivel superior (Clientes, Agentes, Propiedades,
+     * Proyectos, Ventas, Proyección y Guardar y Salir) hasta que el
+     * usuario elige salir, momento en el que se guardan todos los datos
+     * en CSV mediante {@link CsvManager#guardarTodo}.
+     */
     public void iniciar() {
         boolean salir = false;
         while (!salir) {
@@ -77,6 +99,13 @@ public class MenuConsola {
 
     // Entero sin restricción de signo: se usa SOLO para navegar menús (elegir opción 1, 2, 3...),
     // donde no corresponde al equivalente de ningún JTextField con FiltrosTexto.
+    /**
+     * Lee un número entero desde la consola, repitiendo la pregunta hasta
+     * obtener un valor válido. No restringe el signo (acepta negativos).
+     *
+     * @param prompt mensaje a mostrar antes de leer la entrada
+     * @return el entero ingresado por el usuario
+     */
     private int leerEntero(String prompt) {
         while (true) {
             System.out.print(prompt);
@@ -93,6 +122,14 @@ public class MenuConsola {
     // de la ventana (que bloquea el símbolo "-" directamente al escribir).
     // Se usa para TODOS los IDs y campos numéricos de formularios (habitaciones,
     // baños, valor UF, número de casa/depto) -- igual que en los Panel*.java.
+    /**
+     * Lee un número entero NO negativo desde la consola, repitiendo la
+     * pregunta hasta obtener un valor válido. Equivalente de consola a
+     * {@code FiltrosTexto.soloEnteros()} usado en la ventana Swing.
+     *
+     * @param prompt mensaje a mostrar antes de leer la entrada
+     * @return el entero no negativo ingresado por el usuario
+     */
     private int leerEnteroNoNegativo(String prompt) {
         while (true) {
             int valor = leerEntero(prompt);
@@ -107,6 +144,15 @@ public class MenuConsola {
     // Igual que leerEnteroNoNegativo, pero para ediciones donde dejar vacío
     // significa "no cambiar este campo" (equivalente a dejar el JTextField
     // con su valor precargado sin tocarlo en la ventana).
+    /**
+     * Lee un número entero NO negativo opcional desde la consola, donde
+     * dejar la entrada vacía significa "no cambiar este campo"
+     * (equivalente de consola a dejar un JTextField con su valor
+     * precargado sin modificar en la ventana).
+     *
+     * @param prompt mensaje a mostrar antes de leer la entrada
+     * @return el entero ingresado, o {@code null} si el usuario dejó la entrada vacía
+     */
     private Integer leerEnteroOpcionalNoNegativo(String prompt) {
         while (true) {
             String texto = leerTexto(prompt);
@@ -124,6 +170,12 @@ public class MenuConsola {
         }
     }
 
+    /**
+     * Lee una línea de texto desde la consola, sin ninguna validación.
+     *
+     * @param prompt mensaje a mostrar antes de leer la entrada
+     * @return el texto ingresado por el usuario, sin espacios al inicio/final
+     */
     private String leerTexto(String prompt) {
         System.out.print(prompt);
         return sc.nextLine().trim();
@@ -132,6 +184,15 @@ public class MenuConsola {
     // Igual que leerTexto, pero solo acepta letras, tildes, ñ y espacios
     // (equivalente a FiltrosTexto.soloLetras() en la ventana). Se usa en
     // TODOS los campos de nombre (Cliente, Agente, Proyecto, Ubicación).
+    /**
+     * Lee una línea de texto desde la consola que solo acepta letras,
+     * tildes, ñ y espacios, repitiendo la pregunta hasta obtener un valor
+     * válido. Equivalente de consola a {@code FiltrosTexto.soloLetras()}
+     * usado en la ventana Swing, para campos de nombre.
+     *
+     * @param prompt mensaje a mostrar antes de leer la entrada
+     * @return el texto válido ingresado por el usuario
+     */
     private String leerTextoSoloLetras(String prompt) {
         final String PATRON = "[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ ]*";
         while (true) {
@@ -143,6 +204,13 @@ public class MenuConsola {
         }
     }
 
+    /**
+     * Lee una respuesta de tipo sí/no desde la consola, repitiendo la
+     * pregunta hasta que el usuario ingrese "S" o "N".
+     *
+     * @param prompt mensaje a mostrar antes de leer la entrada
+     * @return {@code true} si el usuario respondió "S", {@code false} si respondió "N"
+     */
     private boolean leerSiNo(String prompt) {
         while (true) {
             System.out.print(prompt + " (S/N): ");
@@ -155,6 +223,11 @@ public class MenuConsola {
 
     // ============ CLIENTES ============
 
+    /**
+     * Muestra el submenú de gestión de Clientes (Agregar, Editar,
+     * Eliminar, Buscar, Mostrar todos) y despacha la opción elegida hasta
+     * que el usuario decide volver al menú principal.
+     */
     private void menuClientes() {
         boolean volver = false;
         while (!volver) {
@@ -173,6 +246,11 @@ public class MenuConsola {
         }
     }
 
+    /**
+     * Pide por consola los datos de un nuevo cliente (ID y nombre) y lo
+     * agrega al gestor de clientes, validando que el ID no esté en uso y
+     * que el nombre no esté vacío.
+     */
     private void agregarClienteConsola() {
         int id = leerEnteroNoNegativo("ID del cliente (número, sin negativos): ");
         if (gestorClientes.getClientes().containsKey(String.valueOf(id))) {
@@ -185,9 +263,12 @@ public class MenuConsola {
             return;
         }
         gestorClientes.agregarCliente(new Cliente(String.valueOf(id), nombre));
-        CsvManager.guardarClientes(gestorClientes);
     }
 
+    /**
+     * Pide por consola el ID de un cliente existente y permite editar su
+     * nombre, dejando el valor actual si se ingresa vacío.
+     */
     private void editarClienteConsola() {
         int id = leerEnteroNoNegativo("ID del cliente a editar: ");
         try {
@@ -195,13 +276,17 @@ public class MenuConsola {
             String nuevoNombre = leerTextoSoloLetras("Nuevo nombre (vacío = no cambiar, actual: " + c.getNombre() + "): ");
             if (!nuevoNombre.isEmpty()) {
                 c.setNombre(nuevoNombre);
-                CsvManager.guardarClientes(gestorClientes);
             }
         } catch (ElementoNoEncontradoException e) {
             System.out.println("Cliente no encontrado.");
         }
     }
 
+    /**
+     * Pide por consola el ID de un cliente y lo elimina del gestor de
+     * clientes, previa validación de que no tenga propiedades adquiridas
+     * registradas.
+     */
     private void eliminarClienteConsola() {
         int id = leerEnteroNoNegativo("ID del cliente a eliminar: ");
         try {
@@ -212,23 +297,35 @@ public class MenuConsola {
                 return;
             }
             gestorClientes.eliminarCliente(String.valueOf(id));
-            CsvManager.guardarClientes(gestorClientes);
         } catch (ElementoNoEncontradoException e) {
             System.out.println("Cliente no encontrado.");
         }
     }
 
+    // Busca verificando ID Y nombre a la vez (sobrecarga de 2 parámetros de
+    // GestorClientes.buscarCliente), para confirmar que el nombre corresponde
+    // al ID antes de dar el resultado por válido.
+    /**
+     * Pide por consola el ID y el nombre de un cliente, y busca que
+     * ambos correspondan al mismo cliente registrado.
+     */
     private void buscarClienteConsola() {
         int id = leerEnteroNoNegativo("ID del cliente a buscar: ");
+        String nombre = leerTextoSoloLetras("Nombre del cliente a buscar: ");
         try {
-            gestorClientes.buscarCliente(String.valueOf(id));
+            gestorClientes.buscarCliente(nombre, String.valueOf(id));
         } catch (ElementoNoEncontradoException e) {
-            System.out.println("Cliente no encontrado.");
+            System.out.println("No se encontró un cliente con ese ID y ese nombre a la vez.");
         }
     }
 
     // ============ AGENTES ============
 
+    /**
+     * Muestra el submenú de gestión de Agentes (Agregar, Editar,
+     * Eliminar, Buscar, Mostrar todos) y despacha la opción elegida hasta
+     * que el usuario decide volver al menú principal.
+     */
     private void menuAgentes() {
         boolean volver = false;
         while (!volver) {
@@ -247,6 +344,11 @@ public class MenuConsola {
         }
     }
 
+    /**
+     * Pide por consola los datos de un nuevo agente (ID y nombre) y lo
+     * agrega al gestor de agentes, validando que el ID no esté en uso y
+     * que el nombre no esté vacío.
+     */
     private void agregarAgenteConsola() {
         int id = leerEnteroNoNegativo("ID del agente (número, sin negativos): ");
         if (gestorAgentes.getAgentes().containsKey(String.valueOf(id))) {
@@ -259,9 +361,12 @@ public class MenuConsola {
             return;
         }
         gestorAgentes.agregarAgentes(new AgenteInmobiliario(String.valueOf(id), nombre));
-        CsvManager.guardarAgentes(gestorAgentes);
     }
 
+    /**
+     * Pide por consola el ID de un agente existente y permite editar su
+     * nombre, dejando el valor actual si se ingresa vacío.
+     */
     private void editarAgenteConsola() {
         int id = leerEnteroNoNegativo("ID del agente a editar: ");
         try {
@@ -269,13 +374,16 @@ public class MenuConsola {
             String nuevoNombre = leerTextoSoloLetras("Nuevo nombre (vacío = no cambiar, actual: " + a.getNombre() + "): ");
             if (!nuevoNombre.isEmpty()) {
                 a.setNombre(nuevoNombre);
-                CsvManager.guardarAgentes(gestorAgentes);
             }
         } catch (ElementoNoEncontradoException e) {
             System.out.println("Agente no encontrado.");
         }
     }
 
+    /**
+     * Pide por consola el ID de un agente y lo elimina del gestor de
+     * agentes, previa validación de que no tenga ventas registradas.
+     */
     private void eliminarAgenteConsola() {
         int id = leerEnteroNoNegativo("ID del agente a eliminar: ");
         try {
@@ -288,12 +396,15 @@ public class MenuConsola {
                 return;
             }
             gestorAgentes.eliminarAgentes(String.valueOf(id));
-            CsvManager.guardarAgentes(gestorAgentes);
         } catch (ElementoNoEncontradoException e) {
             System.out.println("Agente no encontrado.");
         }
     }
 
+    /**
+     * Pide por consola el ID de un agente y lo busca en el gestor de
+     * agentes, mostrando un mensaje de error si no existe.
+     */
     private void buscarAgenteConsola() {
         int id = leerEnteroNoNegativo("ID del agente a buscar: ");
         try {
@@ -305,11 +416,17 @@ public class MenuConsola {
 
     // ============ PROPIEDADES ============
 
+    /**
+     * Muestra el submenú de gestión de Propiedades (Agregar, Editar,
+     * Eliminar, Vender, Registrar Interesado, Buscar, Mostrar todas) y
+     * despacha la opción elegida hasta que el usuario decide volver al
+     * menú principal.
+     */
     private void menuPropiedades() {
         boolean volver = false;
         while (!volver) {
             System.out.println("\n--- Propiedades ---");
-            System.out.println("1. Agregar  2. Editar  3. Eliminar  4. Vender  5. Registrar Interesado  6. Mostrar todas  0. Volver");
+            System.out.println("1. Agregar  2. Editar  3. Eliminar  4. Vender  5. Registrar Interesado  6. Buscar  7. Mostrar todas  0. Volver");
             int op = leerEntero("Elige una opción: ");
             switch (op) {
                 case 1: agregarPropiedadConsola(); break;
@@ -317,13 +434,20 @@ public class MenuConsola {
                 case 3: eliminarPropiedadConsola(); break;
                 case 4: venderPropiedadConsola(); break;
                 case 5: registrarInteresadoConsola(); break;
-                case 6: mostrarPropiedadesConsola(); break;
+                case 6: buscarPropiedadConsola(); break;
+                case 7: mostrarPropiedadesConsola(); break;
                 case 0: volver = true; break;
                 default: System.out.println("Opción inválida.");
             }
         }
     }
 
+    /**
+     * Lee por consola el tipo de una propiedad, repitiendo la pregunta
+     * hasta que el usuario ingrese exactamente "CASA" o "DEPARTAMENTO".
+     *
+     * @return el tipo ingresado, en mayúsculas ("CASA" o "DEPARTAMENTO")
+     */
     private String leerTipoPropiedad() {
         while (true) {
             String tipo = leerTexto("Tipo (CASA / DEPARTAMENTO): ").toUpperCase();
@@ -332,6 +456,11 @@ public class MenuConsola {
         }
     }
 
+    /**
+     * Pide por consola todos los datos de una nueva propiedad (Casa o
+     * Departamento) y la agrega al gestor de propiedades, validando que
+     * el ID no esté en uso.
+     */
     private void agregarPropiedadConsola() {
         int id = leerEnteroNoNegativo("ID de la propiedad (número único, sin negativos): ");
         if (gestorPropiedades.getPropiedades().containsKey(id)) {
@@ -351,9 +480,14 @@ public class MenuConsola {
                 : new Departamento(descripcion, habitaciones, banos, valorUF, estacionamiento, numero);
 
         gestorPropiedades.agregarPropiedad(id, p);
-        CsvManager.guardarPropiedades(gestorPropiedades, gestorClientes);
     }
 
+    /**
+     * Pide por consola el ID de una propiedad existente y permite editar
+     * su descripción, habitaciones, baños, valor UF y estacionamiento,
+     * dejando cada campo sin cambios si se ingresa vacío (salvo
+     * estacionamiento, que siempre se vuelve a preguntar).
+     */
     private void editarPropiedadConsola() {
         int id = leerEnteroNoNegativo("ID de la propiedad a editar: ");
         try {
@@ -373,12 +507,16 @@ public class MenuConsola {
 
             p.setEstacionamiento(leerSiNo("¿Tiene estacionamiento?"));
 
-            CsvManager.guardarPropiedades(gestorPropiedades, gestorClientes);
         } catch (ElementoNoEncontradoException e) {
             System.out.println("Propiedad no encontrada.");
         }
     }
 
+    /**
+     * Pide por consola el ID de una propiedad y la elimina del gestor de
+     * propiedades, previa validación de que no esté vendida ni asignada
+     * a ningún proyecto.
+     */
     private void eliminarPropiedadConsola() {
         int id = leerEnteroNoNegativo("ID de la propiedad a eliminar: ");
         try {
@@ -396,7 +534,6 @@ public class MenuConsola {
             }
 
             gestorPropiedades.eliminarPropiedad(id);
-            CsvManager.guardarPropiedades(gestorPropiedades, gestorClientes);
         } catch (ElementoNoEncontradoException e) {
             System.out.println("Propiedad no encontrada.");
         }
@@ -404,6 +541,13 @@ public class MenuConsola {
 
     // Mismo comportamiento de 3 casos que en PanelPropiedades.venderPropiedad():
     // no vendida -> pide cliente + agente / vendida sin agente -> pide solo agente / vendida con agente -> avisa
+    /**
+     * Pide por consola el ID de una propiedad y la vende, solicitando al
+     * usuario un cliente comprador y un agente encargado. Si la
+     * propiedad ya figura como vendida pero no tiene una {@link Venta}
+     * asociada, delega en
+     * {@link #asignarAgenteAVentaExistenteConsola(Propiedad)}.
+     */
     private void venderPropiedadConsola() {
         int id = leerEnteroNoNegativo("ID de la propiedad a vender: ");
         try {
@@ -438,15 +582,21 @@ public class MenuConsola {
             Venta venta = agente.venderPropiedad(p, c);
             gestorVentas.agregarVenta(venta);
 
-            CsvManager.guardarPropiedades(gestorPropiedades, gestorClientes);
-            CsvManager.guardarVentas(gestorVentas, gestorPropiedades);
         } catch (PropiedadVendidaException e) {
-            System.out.println("Esa propiedad ya estaba vendida.");
+            System.out.println(e.getMessage());
         } catch (ElementoNoEncontradoException e) {
             System.out.println("Propiedad, cliente o agente no encontrado.");
         }
     }
 
+    /**
+     * Completa el registro de venta de una propiedad que ya figura como
+     * vendida pero no tiene una {@link Venta} asociada, pidiendo por
+     * consola solo el agente encargado (el cliente ya se conoce, por
+     * estar en su lista de propiedades adquiridas).
+     *
+     * @param p propiedad vendida sin venta registrada
+     */
     private void asignarAgenteAVentaExistenteConsola(Propiedad p) {
         Cliente clienteDueño = buscarClientePorPropiedad(p);
         if (clienteDueño == null) {
@@ -463,23 +613,46 @@ public class MenuConsola {
             AgenteInmobiliario agente = gestorAgentes.buscarAgentes(String.valueOf(idAgente));
             Venta venta = new Venta(p, clienteDueño, agente);
             gestorVentas.agregarVenta(venta);
-            CsvManager.guardarVentas(gestorVentas, gestorPropiedades);
         } catch (ElementoNoEncontradoException e) {
             System.out.println("Agente no encontrado.");
         }
     }
 
+    /**
+     * Pide por consola el ID de una propiedad y registra un nuevo
+     * interesado en ella, incrementando su contador de interesados.
+     */
     private void registrarInteresadoConsola() {
         int id = leerEnteroNoNegativo("ID de la propiedad: ");
         try {
             Propiedad p = gestorPropiedades.buscarPropiedad(id);
             p.registrarInteresados();
-            CsvManager.guardarPropiedades(gestorPropiedades, gestorClientes);
         } catch (ElementoNoEncontradoException e) {
             System.out.println("Propiedad no encontrada.");
         }
     }
 
+    /**
+     * Pide por consola el ID de una propiedad y muestra sus datos
+     * principales si existe.
+     */
+    private void buscarPropiedadConsola() {
+        int id = leerEnteroNoNegativo("ID de la propiedad a buscar: ");
+        try {
+            Propiedad p = gestorPropiedades.buscarPropiedad(id);
+            String tipo = (p instanceof Casa) ? "CASA" : "DEPARTAMENTO";
+            System.out.println("Propiedad encontrada [" + id + "] " + tipo + ": " + p.getDescripcion()
+                    + " | Valor: " + p.getValorUF() + " UF | Vendido: " + p.isVendido());
+        } catch (ElementoNoEncontradoException e) {
+            System.out.println("Propiedad no encontrada.");
+        }
+    }
+
+    /**
+     * Muestra por consola la lista completa de propiedades registradas,
+     * con sus datos principales y el cliente/agente asociados, si los
+     * tiene.
+     */
     private void mostrarPropiedadesConsola() {
         System.out.println("--- Lista de propiedades (" + gestorPropiedades.getPropiedades().size() + ") ---");
         for (Map.Entry<Integer, Propiedad> entry : gestorPropiedades.getPropiedades().entrySet()) {
@@ -505,11 +678,23 @@ public class MenuConsola {
         }
     }
 
+    /**
+     * Busca el nombre del cliente que tiene adquirida la propiedad dada.
+     *
+     * @param p propiedad a buscar entre los clientes
+     * @return el nombre del cliente dueño, o cadena vacía si ninguno la tiene
+     */
     private String buscarNombreClientePorPropiedad(Propiedad p) {
         Cliente c = buscarClientePorPropiedad(p);
         return c == null ? "" : c.getNombre();
     }
 
+    /**
+     * Busca el cliente que tiene adquirida la propiedad dada.
+     *
+     * @param p propiedad a buscar entre los clientes
+     * @return el cliente dueño, o {@code null} si ninguno la tiene
+     */
     private Cliente buscarClientePorPropiedad(Propiedad p) {
         for (Cliente c : gestorClientes.getClientes().values()) {
             if (c.getPropiedadesAdquiridas().contains(p)) {
@@ -519,6 +704,12 @@ public class MenuConsola {
         return null;
     }
 
+    /**
+     * Busca el nombre del agente que vendió la propiedad dada.
+     *
+     * @param p propiedad a buscar entre las ventas registradas
+     * @return el nombre del agente encargado, o cadena vacía si no hay venta asociada
+     */
     private String buscarNombreAgentePorPropiedad(Propiedad p) {
         Venta v = gestorVentas.buscarVentaPorPropiedad(p);
         return v == null ? "" : v.getAgenteEncargado().getNombre();
@@ -526,11 +717,18 @@ public class MenuConsola {
 
     // ============ PROYECTOS ============
 
+    /**
+     * Muestra el submenú de gestión de Proyectos (Agregar, Editar,
+     * Eliminar, Asignar Propiedad Existente, Crear y Asignar Propiedad,
+     * Quitar Propiedad del Proyecto, Buscar, Mostrar todos) y despacha
+     * la opción elegida hasta que el usuario decide volver al menú
+     * principal.
+     */
     private void menuProyectos() {
         boolean volver = false;
         while (!volver) {
             System.out.println("\n--- Proyectos ---");
-            System.out.println("1. Agregar  2. Editar  3. Eliminar  4. Asignar Propiedad Existente  5. Crear y Asignar Propiedad  6. Quitar Propiedad del Proyecto  7. Mostrar todos  0. Volver");
+            System.out.println("1. Agregar  2. Editar  3. Eliminar  4. Asignar Propiedad Existente  5. Crear y Asignar Propiedad  6. Quitar Propiedad del Proyecto  7. Buscar  8. Mostrar todos  0. Volver");
             int op = leerEntero("Elige una opción: ");
             switch (op) {
                 case 1: agregarProyectoConsola(); break;
@@ -539,13 +737,19 @@ public class MenuConsola {
                 case 4: asignarPropiedadConsola(); break;
                 case 5: crearYAsignarPropiedadConsola(); break;
                 case 6: quitarPropiedadConsola(); break;
-                case 7: mostrarProyectosConsola(); break;
+                case 7: buscarProyectoConsola(); break;
+                case 8: mostrarProyectosConsola(); break;
                 case 0: volver = true; break;
                 default: System.out.println("Opción inválida.");
             }
         }
     }
 
+    /**
+     * Pide por consola los datos de un nuevo proyecto (ID, nombre y
+     * ubicación) y lo agrega al gestor de proyectos, validando que el
+     * ID no esté en uso y que el nombre no esté vacío.
+     */
     private void agregarProyectoConsola() {
         int id = leerEnteroNoNegativo("ID del proyecto (número, sin negativos): ");
         if (gestorProyectos.getProyectos().containsKey(String.valueOf(id))) {
@@ -559,9 +763,13 @@ public class MenuConsola {
             return;
         }
         gestorProyectos.agregarProyecto(new ProyectoInmobiliario(String.valueOf(id), nombre, ubicacion));
-        CsvManager.guardarProyectos(gestorProyectos);
     }
 
+    /**
+     * Pide por consola el ID de un proyecto existente y permite editar
+     * su nombre y ubicación, dejando cada campo sin cambios si se
+     * ingresa vacío.
+     */
     private void editarProyectoConsola() {
         int id = leerEnteroNoNegativo("ID del proyecto a editar: ");
         try {
@@ -570,22 +778,29 @@ public class MenuConsola {
             if (!nombre.isEmpty()) pr.setNombre(nombre);
             String ubicacion = leerTextoSoloLetras("Nueva ubicación (vacío = no cambiar, actual: " + pr.getUbicacion() + "): ");
             if (!ubicacion.isEmpty()) pr.setUbicacion(ubicacion);
-            CsvManager.guardarProyectos(gestorProyectos);
         } catch (ElementoNoEncontradoException e) {
             System.out.println("Proyecto no encontrado.");
         }
     }
 
+    /**
+     * Pide por consola el ID de un proyecto y lo elimina del gestor de
+     * proyectos.
+     */
     private void eliminarProyectoConsola() {
         int id = leerEnteroNoNegativo("ID del proyecto a eliminar: ");
         try {
             gestorProyectos.eliminarProyecto(String.valueOf(id));
-            CsvManager.guardarProyectos(gestorProyectos);
         } catch (ElementoNoEncontradoException e) {
             System.out.println("Proyecto no encontrado.");
         }
     }
 
+    /**
+     * Pide por consola el ID de un proyecto y el ID de una propiedad ya
+     * existente, y asigna esa propiedad al proyecto, validando que no
+     * esté ya asignada a otro proyecto distinto.
+     */
     private void asignarPropiedadConsola() {
         int idProyecto = leerEnteroNoNegativo("ID del proyecto: ");
         if (gestorPropiedades.getPropiedades().isEmpty()) {
@@ -608,8 +823,7 @@ public class MenuConsola {
                 return;
             }
 
-            pr.getPropiedades().put(idProp, prop);
-            CsvManager.guardarProyectos(gestorProyectos);
+            pr.asignarPropiedad(idProp, prop);
             System.out.println("Propiedad " + idProp + " asignada al proyecto " + idProyecto + ".");
             if (prop.isVendido()) {
                 System.out.println("Nota: esta propiedad ya está vendida, por lo tanto NO suma a la oferta disponible del proyecto.");
@@ -619,6 +833,11 @@ public class MenuConsola {
         }
     }
 
+    /**
+     * Pide por consola el ID de un proyecto existente y los datos de una
+     * propiedad nueva (Casa o Departamento), la crea en el gestor de
+     * propiedades y la asigna de inmediato a ese proyecto.
+     */
     private void crearYAsignarPropiedadConsola() {
         int idProyecto = leerEnteroNoNegativo("ID del proyecto: ");
         try {
@@ -642,10 +861,8 @@ public class MenuConsola {
                     : new Departamento(descripcion, habitaciones, banos, valorUF, estacionamiento, numero);
 
             gestorPropiedades.agregarPropiedad(idProp, prop);
-            pr.getPropiedades().put(idProp, prop);
+            pr.asignarPropiedad(idProp, prop);
 
-            CsvManager.guardarPropiedades(gestorPropiedades, gestorClientes);
-            CsvManager.guardarProyectos(gestorProyectos);
         } catch (ElementoNoEncontradoException e) {
             System.out.println("Proyecto no encontrado.");
         }
@@ -653,6 +870,11 @@ public class MenuConsola {
 
     // Desasigna una propiedad del proyecto (NO la elimina de GestorPropiedades,
     // solo la saca de la lista de este proyecto).
+    /**
+     * Pide por consola el ID de un proyecto y el ID de una propiedad
+     * asignada a él, y la desasigna del proyecto (sin eliminarla del
+     * gestor de propiedades).
+     */
     private void quitarPropiedadConsola() {
         int idProyecto = leerEnteroNoNegativo("ID del proyecto: ");
         try {
@@ -662,8 +884,7 @@ public class MenuConsola {
                 return;
             }
             int idProp = leerEnteroNoNegativo("ID de la propiedad a quitar: ");
-            if (pr.getPropiedades().remove(idProp) != null) {
-                CsvManager.guardarProyectos(gestorProyectos);
+            if (pr.quitarPropiedad(idProp) != null) {
                 System.out.println("Propiedad " + idProp + " desasignada del proyecto " + idProyecto + ".");
             } else {
                 System.out.println("Esa propiedad no estaba asignada a este proyecto.");
@@ -673,6 +894,30 @@ public class MenuConsola {
         }
     }
 
+    // Busca verificando ID Y nombre a la vez (sobrecarga de 2 parámetros de
+    // GestorProyectos.buscarProyecto).
+    /**
+     * Pide por consola el ID y el nombre de un proyecto, y busca que
+     * ambos correspondan al mismo proyecto registrado, mostrando sus
+     * datos principales si lo encuentra.
+     */
+    private void buscarProyectoConsola() {
+        int id = leerEnteroNoNegativo("ID del proyecto a buscar: ");
+        String nombre = leerTextoSoloLetras("Nombre del proyecto a buscar: ");
+        try {
+            ProyectoInmobiliario pr = gestorProyectos.buscarProyecto(nombre, String.valueOf(id));
+            System.out.println("Proyecto encontrado: [" + pr.getIdProyecto() + "] " + pr.getNombre()
+                    + " (" + pr.getUbicacion() + ") | Propiedades: " + pr.getPropiedades().size());
+        } catch (ElementoNoEncontradoException e) {
+            System.out.println("No se encontró un proyecto con ese ID y ese nombre a la vez.");
+        }
+    }
+
+    /**
+     * Muestra por consola la lista completa de proyectos registrados,
+     * con su nombre, ubicación, cantidad de propiedades, oferta
+     * disponible y demanda total.
+     */
     private void mostrarProyectosConsola() {
         System.out.println("--- Lista de proyectos (" + gestorProyectos.getProyectos().size() + ") ---");
         for (ProyectoInmobiliario pr : gestorProyectos.getProyectos().values()) {
@@ -685,6 +930,11 @@ public class MenuConsola {
 
     // ============ VENTAS ============
 
+    /**
+     * Muestra por consola el historial completo de ventas registradas,
+     * indicando la propiedad, el cliente comprador y el agente
+     * encargado de cada una.
+     */
     private void verVentas() {
         System.out.println("\n--- Historial de Ventas (" + gestorVentas.getVentas().size() + ") ---");
         for (Venta v : gestorVentas.getVentas()) {
@@ -695,6 +945,12 @@ public class MenuConsola {
 
     // ============ PROYECCIÓN DE PRECIOS ============
 
+    /**
+     * Muestra por consola la lista de proyectos disponibles con sus
+     * métricas actuales, pide al usuario elegir uno y una cantidad de
+     * meses, y muestra la proyección de oferta/demanda y precio
+     * resultante, registrando además el estado de mercado actual.
+     */
     private void proyectarPrecioConsola() {
         if (gestorProyectos.getProyectos().isEmpty()) {
             System.out.println("No hay proyectos registrados todavía.");

@@ -22,7 +22,8 @@ import javax.swing.table.DefaultTableModel;
 /**
  * Pestaña de gestión de proyectos inmobiliarios: tabla + Agregar/Editar/Eliminar,
  * más un botón para asignar propiedades existentes a un proyecto.
- * Cada operación guarda automáticamente en proyectos.csv.
+ * Los cambios se guardan en proyectos.csv recién al cerrar la ventana
+ * (ver MainWindow.windowClosing), no después de cada operación.
  *
  * @author jacor
  */
@@ -34,6 +35,14 @@ public class PanelProyectos extends JPanel {
     private final JTable tabla;
     private final DefaultTableModel modelo;
 
+    /**
+     * Construye el panel de gestión de proyectos: arma la tabla, los botones
+     * de acción y sus listeners, y carga la tabla con los proyectos existentes.
+     *
+     * @param gestorProyectos gestor que mantiene la colección de proyectos inmobiliarios
+     * @param gestorPropiedades gestor de propiedades, usado para asignar/crear/quitar propiedades de un proyecto
+     * @param gestorClientes gestor de clientes, recibido para uso futuro/consistencia con los demás paneles
+     */
     public PanelProyectos(GestorProyectos gestorProyectos, GestorPropiedades gestorPropiedades, GestorClientes gestorClientes) {
         this.gestorProyectos = gestorProyectos;
         this.gestorPropiedades = gestorPropiedades;
@@ -57,6 +66,7 @@ public class PanelProyectos extends JPanel {
         JButton btnAsignar = new JButton("Asignar Propiedad Existente");
         JButton btnCrearAsignar = new JButton("Crear y Asignar Propiedad");
         JButton btnQuitar = new JButton("Quitar Propiedad del Proyecto");
+        JButton btnBuscar = new JButton("Buscar");
         JButton btnRefrescar = new JButton("Refrescar");
         panelBotones.add(btnAgregar);
         panelBotones.add(btnEditar);
@@ -64,6 +74,7 @@ public class PanelProyectos extends JPanel {
         panelBotones.add(btnAsignar);
         panelBotones.add(btnCrearAsignar);
         panelBotones.add(btnQuitar);
+        panelBotones.add(btnBuscar);
         panelBotones.add(btnRefrescar);
         add(panelBotones, BorderLayout.SOUTH);
 
@@ -73,11 +84,17 @@ public class PanelProyectos extends JPanel {
         btnAsignar.addActionListener(e -> asignarPropiedad());
         btnCrearAsignar.addActionListener(e -> crearYAsignarPropiedad());
         btnQuitar.addActionListener(e -> quitarPropiedad());
+        btnBuscar.addActionListener(e -> buscarProyecto());
         btnRefrescar.addActionListener(e -> refrescarTabla());
 
         refrescarTabla();
     }
 
+    /**
+     * Vuelve a cargar todas las filas de la tabla a partir del estado actual
+     * de {@code gestorProyectos}, calculando para cada proyecto su oferta
+     * disponible y su demanda total.
+     */
     public void refrescarTabla() {
         modelo.setRowCount(0);
         for (ProyectoInmobiliario pr : gestorProyectos.getProyectos().values()) {
@@ -88,6 +105,52 @@ public class PanelProyectos extends JPanel {
         }
     }
 
+    // Busca verificando ID Y nombre a la vez (sobrecarga de 2 parámetros de
+    // GestorProyectos.buscarProyecto), para confirmar que el nombre
+    // corresponde al ID antes de dar el resultado por válido.
+    /**
+     * Manejador del botón "Buscar". Pide por diálogo el ID y el nombre del
+     * proyecto, y usa la sobrecarga de dos parámetros de
+     * {@code GestorProyectos.buscarProyecto} para validar que ambos datos
+     * correspondan al mismo proyecto antes de mostrar el resultado.
+     */
+    private void buscarProyecto() {
+        JTextField txtId = new JTextField();
+        FiltrosTexto.soloEnteros(txtId);
+        JTextField txtNombre = new JTextField();
+        FiltrosTexto.soloLetras(txtNombre);
+        JPanel panel = new JPanel(new GridLayout(2, 2, 5, 5));
+        panel.add(new JLabel("ID Proyecto:"));
+        panel.add(txtId);
+        panel.add(new JLabel("Nombre:"));
+        panel.add(txtNombre);
+
+        int resultado = JOptionPane.showConfirmDialog(this, panel, "Buscar Proyecto (por ID y Nombre)", JOptionPane.OK_CANCEL_OPTION);
+        if (resultado != JOptionPane.OK_OPTION) return;
+
+        String id = txtId.getText().trim();
+        String nombre = txtNombre.getText().trim();
+        if (id.isEmpty() || nombre.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Debes ingresar ID y nombre.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        try {
+            ProyectoInmobiliario pr = gestorProyectos.buscarProyecto(nombre, id);
+            JOptionPane.showMessageDialog(this, "Proyecto encontrado: [" + pr.getIdProyecto() + "] " + pr.getNombre()
+                    + " (" + pr.getUbicacion() + ")\nPropiedades: " + pr.getPropiedades().size(),
+                    "Proyecto encontrado", JOptionPane.INFORMATION_MESSAGE);
+        } catch (ElementoNoEncontradoException ex) {
+            JOptionPane.showMessageDialog(this, "No se encontró un proyecto con ese ID y ese nombre a la vez.",
+                    "No encontrado", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /**
+     * Manejador del botón "Agregar". Pide por diálogo el ID, nombre y
+     * ubicación del nuevo proyecto, valida que los campos obligatorios no
+     * estén vacíos y que el ID no esté repetido, y lo agrega al gestor.
+     */
     private void agregarProyecto() {
         JTextField txtId = new JTextField();
         FiltrosTexto.soloEnteros(txtId);
@@ -116,10 +179,13 @@ public class PanelProyectos extends JPanel {
         }
 
         gestorProyectos.agregarProyecto(new ProyectoInmobiliario(id, nombre, ubicacion));
-        CsvManager.guardarProyectos(gestorProyectos);
         refrescarTabla();
     }
 
+    /**
+     * Manejador del botón "Editar". Toma el proyecto seleccionado en la
+     * tabla y permite modificar su nombre y ubicación mediante un diálogo.
+     */
     private void editarProyecto() {
         int fila = tabla.getSelectedRow();
         if (fila == -1) {
@@ -142,7 +208,6 @@ public class PanelProyectos extends JPanel {
             if (resultado == JOptionPane.OK_OPTION) {
                 pr.setNombre(txtNombre.getText().trim());
                 pr.setUbicacion(txtUbicacion.getText().trim());
-                CsvManager.guardarProyectos(gestorProyectos);
                 refrescarTabla();
             }
         } catch (ElementoNoEncontradoException ex) {
@@ -150,6 +215,10 @@ public class PanelProyectos extends JPanel {
         }
     }
 
+    /**
+     * Manejador del botón "Eliminar". Pide confirmación y elimina del
+     * gestor el proyecto seleccionado en la tabla.
+     */
     private void eliminarProyecto() {
         int fila = tabla.getSelectedRow();
         if (fila == -1) {
@@ -162,13 +231,19 @@ public class PanelProyectos extends JPanel {
 
         try {
             gestorProyectos.eliminarProyecto(id);
-            CsvManager.guardarProyectos(gestorProyectos);
             refrescarTabla();
         } catch (ElementoNoEncontradoException ex) {
             JOptionPane.showMessageDialog(this, "Proyecto no encontrado.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
+    /**
+     * Manejador del botón "Asignar Propiedad Existente". Permite elegir una
+     * propiedad ya registrada en {@code gestorPropiedades} y asignarla al
+     * proyecto seleccionado, verificando primero que esa propiedad no esté
+     * ya asignada a otro proyecto (una propiedad física solo puede
+     * pertenecer a un proyecto a la vez).
+     */
     private void asignarPropiedad() {
         int fila = tabla.getSelectedRow();
         if (fila == -1) {
@@ -204,8 +279,7 @@ public class PanelProyectos extends JPanel {
                 return;
             }
 
-            pr.getPropiedades().put(idProp, prop);
-            CsvManager.guardarProyectos(gestorProyectos);
+            pr.asignarPropiedad(idProp, prop);
             refrescarTabla();
             if (prop.isVendido()) {
                 JOptionPane.showMessageDialog(this, "Propiedad " + idProp + " asignada al proyecto " + idProyecto
@@ -220,6 +294,12 @@ public class PanelProyectos extends JPanel {
 
     // Crea una propiedad nueva y la asigna al proyecto seleccionado en un solo paso,
     // para no tener que ir a la pestaña Propiedades y volver a Asignar Propiedad.
+    /**
+     * Manejador del botón "Crear y Asignar Propiedad". Pide por diálogo los
+     * datos de una propiedad nueva (Casa o Departamento), la registra en
+     * {@code gestorPropiedades} y la asigna de inmediato al proyecto
+     * seleccionado en la tabla.
+     */
     private void crearYAsignarPropiedad() {
         int fila = tabla.getSelectedRow();
         if (fila == -1) {
@@ -277,10 +357,8 @@ public class PanelProyectos extends JPanel {
 
             gestorPropiedades.agregarPropiedad(idProp, prop);
             ProyectoInmobiliario pr = gestorProyectos.buscarProyecto(idProyecto);
-            pr.getPropiedades().put(idProp, prop);
+            pr.asignarPropiedad(idProp, prop);
 
-            CsvManager.guardarPropiedades(gestorPropiedades, gestorClientes);
-            CsvManager.guardarProyectos(gestorProyectos);
             refrescarTabla();
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this, "ID, habitaciones, baños, valor y número deben ser números enteros.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -293,6 +371,12 @@ public class PanelProyectos extends JPanel {
     // solo la saca de la lista de este proyecto). Necesario para poder eliminar
     // una propiedad más adelante, ya que una propiedad asignada a un proyecto
     // no se puede borrar directamente (ver PanelPropiedades.eliminarPropiedad).
+    /**
+     * Manejador del botón "Quitar Propiedad del Proyecto". Permite elegir una
+     * de las propiedades asignadas al proyecto seleccionado y desasignarla
+     * (usando {@code quitarPropiedad} del proyecto, sin tocar el mapa de
+     * {@code gestorPropiedades} directamente ni eliminar la propiedad).
+     */
     private void quitarPropiedad() {
         int fila = tabla.getSelectedRow();
         if (fila == -1) {
@@ -312,8 +396,7 @@ public class PanelProyectos extends JPanel {
                     "Quitar Propiedad", JOptionPane.PLAIN_MESSAGE, null, idsPropiedades, idsPropiedades[0]);
             if (idProp == null) return;
 
-            pr.getPropiedades().remove(idProp);
-            CsvManager.guardarProyectos(gestorProyectos);
+            pr.quitarPropiedad(idProp);
             refrescarTabla();
             JOptionPane.showMessageDialog(this, "Propiedad " + idProp + " desasignada del proyecto " + idProyecto + ".");
         } catch (ElementoNoEncontradoException ex) {

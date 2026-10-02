@@ -14,6 +14,10 @@ package gestion_inmobilaria;
  */
 public class ElementoNoEncontradoException extends Exception {
 
+    /**
+     * Crea la excepción con un mensaje genérico indicando que el elemento
+     * solicitado no fue encontrado en la colección correspondiente.
+     */
     public ElementoNoEncontradoException() {
         super("El elemento solicitado no fue encontrado.");
     }

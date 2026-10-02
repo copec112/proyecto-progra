@@ -13,9 +13,12 @@ import javax.swing.JTabbedPane;
 
 /**
  * Ventana principal del sistema. Contiene una pestaña por cada entidad
- * (Clientes, Agentes, Propiedades, Proyectos, Ventas). Al cerrarla, se hace
- * un guardado final en CSV como respaldo (aunque cada operación ya guarda
- * por su cuenta apenas ocurre).
+ * (Clientes, Agentes, Propiedades, Proyectos, Ventas). Los datos se cargan
+ * una sola vez al iniciar (App.cargarDatosGenerales) y se guardan una sola
+ * vez al cerrar esta ventana (windowClosing). Antes se guardaba en CSV
+ * después de cada operación CRUD; se cambió porque reescribir todos los
+ * archivos CSV en cada clic es ineficiente y no aporta nada que no dé ya
+ * el guardado final al cerrar.
  *
  * @author jacor
  */
@@ -27,6 +30,18 @@ public class MainWindow extends JFrame {
     private final GestorProyectos gestorProyectos;
     private final GestorVentas gestorVentas;
 
+    /**
+     * Construye la ventana principal, creando y agregando una pestaña por
+     * cada panel de entidad (Clientes, Agentes, Propiedades, Proyectos,
+     * Ventas, Proyección de Precios), y registra el guardado final en CSV
+     * al cerrar la ventana.
+     *
+     * @param gestorClientes gestor de clientes a usar en toda la aplicación.
+     * @param gestorAgentes gestor de agentes inmobiliarios.
+     * @param gestorPropiedades gestor de propiedades.
+     * @param gestorProyectos gestor de proyectos inmobiliarios.
+     * @param gestorVentas gestor de ventas.
+     */
     public MainWindow(GestorClientes gestorClientes, GestorAgentes gestorAgentes,
             GestorPropiedades gestorPropiedades, GestorProyectos gestorProyectos, GestorVentas gestorVentas) {
 
@@ -71,6 +86,12 @@ public class MainWindow extends JFrame {
         add(pestañas);
 
         addWindowListener(new WindowAdapter() {
+            /**
+             * Se ejecuta al cerrar la ventana: guarda todos los datos en
+             * CSV, libera la ventana y termina la aplicación.
+             *
+             * @param e evento de cierre de ventana generado por Swing.
+             */
             @Override
             public void windowClosing(WindowEvent e) {
                 System.out.println("Cerrando ventana, guardando datos finales en CSV...");

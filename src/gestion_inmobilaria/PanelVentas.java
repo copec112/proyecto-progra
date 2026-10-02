@@ -25,6 +25,13 @@ public class PanelVentas extends JPanel {
     private final JTable tabla;
     private final DefaultTableModel modelo;
 
+    /**
+     * Crea el panel de ventas y construye la tabla (de solo lectura) con las
+     * columnas Propiedad, Cliente y Agente, dejándola cargada con los datos
+     * actuales del gestor de ventas.
+     *
+     * @param gestorVentas gestor que entrega la lista de ventas a mostrar.
+     */
     public PanelVentas(GestorVentas gestorVentas) {
         this.gestorVentas = gestorVentas;
 
@@ -49,6 +56,10 @@ public class PanelVentas extends JPanel {
         refrescarTabla();
     }
 
+    /**
+     * Limpia la tabla y la vuelve a llenar con las ventas actuales del
+     * gestor de ventas (propiedad, cliente y agente de cada venta).
+     */
     public void refrescarTabla() {
         modelo.setRowCount(0);
         for (Venta v : gestorVentas.getVentas()) {

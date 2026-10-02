@@ -19,7 +19,8 @@ import javax.swing.table.DefaultTableModel;
 
 /**
  * Pestaña de gestión de clientes: tabla + Agregar/Editar/Eliminar.
- * Cada operación guarda automáticamente en clientes.csv.
+ * Los cambios se guardan en clientes.csv recién al cerrar la ventana
+ * (ver MainWindow.windowClosing), no después de cada operación.
  *
  * @author jacor
  */
@@ -29,6 +30,13 @@ public class PanelClientes extends JPanel {
     private final JTable tabla;
     private final DefaultTableModel modelo;
 
+    /**
+     * Construye el panel de gestión de clientes: crea la tabla, los
+     * botones de Agregar/Editar/Eliminar/Buscar/Refrescar, conecta sus
+     * acciones y carga la tabla con los clientes existentes.
+     *
+     * @param gestorClientes gestor de clientes a mostrar y modificar.
+     */
     public PanelClientes(GestorClientes gestorClientes) {
         this.gestorClientes = gestorClientes;
 
@@ -47,21 +55,28 @@ public class PanelClientes extends JPanel {
         JButton btnAgregar = new JButton("Agregar");
         JButton btnEditar = new JButton("Editar");
         JButton btnEliminar = new JButton("Eliminar");
+        JButton btnBuscar = new JButton("Buscar");
         JButton btnRefrescar = new JButton("Refrescar");
         panelBotones.add(btnAgregar);
         panelBotones.add(btnEditar);
         panelBotones.add(btnEliminar);
+        panelBotones.add(btnBuscar);
         panelBotones.add(btnRefrescar);
         add(panelBotones, BorderLayout.SOUTH);
 
         btnAgregar.addActionListener(e -> agregarCliente());
         btnEditar.addActionListener(e -> editarCliente());
         btnEliminar.addActionListener(e -> eliminarCliente());
+        btnBuscar.addActionListener(e -> buscarCliente());
         btnRefrescar.addActionListener(e -> refrescarTabla());
 
         refrescarTabla();
     }
 
+    /**
+     * Recarga la tabla con el id, nombre y cantidad de propiedades
+     * adquiridas de todos los clientes del gestor.
+     */
     public void refrescarTabla() {
         modelo.setRowCount(0);
         for (Cliente c : gestorClientes.getClientes().values()) {
@@ -69,6 +84,11 @@ public class PanelClientes extends JPanel {
         }
     }
 
+    /**
+     * Maneja el botón "Agregar": pide id y nombre en un diálogo, valida que
+     * no estén vacíos y que el id no esté repetido, y agrega el nuevo
+     * cliente al gestor.
+     */
     private void agregarCliente() {
         JTextField txtId = new JTextField();
         FiltrosTexto.soloEnteros(txtId);
@@ -95,10 +115,13 @@ public class PanelClientes extends JPanel {
         }
 
         gestorClientes.agregarCliente(new Cliente(id, nombre));
-        CsvManager.guardarClientes(gestorClientes);
         refrescarTabla();
     }
 
+    /**
+     * Maneja el botón "Editar": toma el cliente seleccionado en la tabla y
+     * permite modificar su nombre mediante un diálogo.
+     */
     private void editarCliente() {
         int fila = tabla.getSelectedRow();
         if (fila == -1) {
@@ -119,7 +142,6 @@ public class PanelClientes extends JPanel {
                 String nuevoNombre = txtNombre.getText().trim();
                 if (!nuevoNombre.isEmpty()) {
                     c.setNombre(nuevoNombre);
-                    CsvManager.guardarClientes(gestorClientes);
                     refrescarTabla();
                 }
             }
@@ -128,6 +150,54 @@ public class PanelClientes extends JPanel {
         }
     }
 
+    // Busca verificando ID Y nombre a la vez (usa la sobrecarga de dos
+    // parámetros de GestorClientes.buscarCliente, pensada para confirmar que
+    // el nombre corresponde al ID antes de dar por válido el resultado --
+    // por ejemplo, si alguien escribe mal el ID y por casualidad corresponde
+    // a otro cliente, el nombre no va a calzar y se detecta el error).
+    /**
+     * Maneja el botón "Buscar": pide id y nombre en un diálogo y busca un
+     * cliente que coincida con ambos a la vez, mostrando el resultado o un
+     * mensaje de error si no se encuentra.
+     */
+    private void buscarCliente() {
+        JTextField txtId = new JTextField();
+        FiltrosTexto.soloEnteros(txtId);
+        JTextField txtNombre = new JTextField();
+        FiltrosTexto.soloLetras(txtNombre);
+        JPanel panel = new JPanel(new GridLayout(2, 2, 5, 5));
+        panel.add(new JLabel("ID:"));
+        panel.add(txtId);
+        panel.add(new JLabel("Nombre:"));
+        panel.add(txtNombre);
+
+        int resultado = JOptionPane.showConfirmDialog(this, panel, "Buscar Cliente (por ID y Nombre)", JOptionPane.OK_CANCEL_OPTION);
+        if (resultado != JOptionPane.OK_OPTION) return;
+
+        String id = txtId.getText().trim();
+        String nombre = txtNombre.getText().trim();
+        if (id.isEmpty() || nombre.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Debes ingresar ID y nombre.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        try {
+            Cliente c = gestorClientes.buscarCliente(nombre, id);
+            JOptionPane.showMessageDialog(this, "Cliente encontrado: [" + c.getId() + "] " + c.getNombre()
+                    + "\nPropiedades adquiridas: " + c.getPropiedadesAdquiridas().size(),
+                    "Cliente encontrado", JOptionPane.INFORMATION_MESSAGE);
+        } catch (ElementoNoEncontradoException ex) {
+            JOptionPane.showMessageDialog(this, "No se encontró un cliente con ese ID y ese nombre a la vez.",
+                    "No encontrado", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /**
+     * Maneja el botón "Eliminar": toma el cliente seleccionado en la tabla,
+     * verifica que no tenga propiedades adquiridas (en cuyo caso se
+     * bloquea la eliminación) y, tras confirmar con el usuario, lo elimina
+     * del gestor.
+     */
     private void eliminarCliente() {
         int fila = tabla.getSelectedRow();
         if (fila == -1) {
@@ -151,7 +221,6 @@ public class PanelClientes extends JPanel {
             if (confirmar != JOptionPane.YES_OPTION) return;
 
             gestorClientes.eliminarCliente(id);
-            CsvManager.guardarClientes(gestorClientes);
             refrescarTabla();
         } catch (ElementoNoEncontradoException ex) {
             JOptionPane.showMessageDialog(this, "Cliente no encontrado.", "Error", JOptionPane.ERROR_MESSAGE);
